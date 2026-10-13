@@ -178,7 +178,7 @@
                         <span>Panel de Control (Administrador)</span>
                     </div>
                     <h2 class="text-3xl font-black font-display text-white">Gestión del Torneo</h2>
-                    <p class="text-slate-400 text-sm mt-1">Los cambios que guardes aquí se sincronizarán al instante para todos los dispositivos.</p>
+                    <p class="text-slate-400 text-sm mt-1">Los datos se sincronizan directamente con tu Google Sheets.</p>
                 </div>
 
                 <div class="flex items-center space-x-3 flex-wrap gap-2">
@@ -208,7 +208,7 @@
                 </button>
                 <button onclick="setAdminTab('students')" id="tab-admin-students" class="pb-3 text-sm font-bold border-b-2 border-transparent text-slate-400 hover:text-white transition-all flex items-center space-x-2 whitespace-nowrap">
                     <i class="fa-solid fa-users"></i>
-                    <span>Estudiantes (<span id="admin-student-count">0</span>)</span>
+                    <span>Estudiantes y Votos (<span id="admin-student-count">0</span>)</span>
                 </button>
             </div>
 
@@ -220,7 +220,7 @@
                         </div>
                         <div>
                             <h4 class="text-white font-bold">Ronda Actual: <span id="admin-current-round-label" class="text-brand-400">Octavos de Final</span></h4>
-                            <p class="text-xs text-slate-400">Al cerrar la ronda, avanzarán los ganadores.</p>
+                            <p class="text-xs text-slate-400">Los votos se calculan en base al registro oficial de Google Sheets.</p>
                         </div>
                     </div>
                     <button onclick="advanceRound()" class="bg-brand-600 hover:bg-brand-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-md">
@@ -235,7 +235,7 @@
                 <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6">
                     <div class="mb-6">
                         <h4 class="text-lg font-bold text-white font-display">Personalizar Cruces de Octavos</h4>
-                        <p class="text-xs text-slate-400 mt-1">Selecciona qué profesor compite contra quién y guarda los cambios para que se actualice en todos los móviles.</p>
+                        <p class="text-xs text-slate-400 mt-1">Selecciona qué profesor compite contra quién y guarda los cambios para sincronizarlo.</p>
                     </div>
                     <div id="custom-bracket-editor-grid" class="space-y-4"></div>
                     <div class="mt-6 text-right">
@@ -253,18 +253,19 @@
             <div id="admin-tab-students" class="space-y-6 hidden">
                 <div class="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-xl">
                     <div class="p-6 border-b border-slate-800 flex justify-between items-center">
-                        <h4 class="font-bold text-white font-display">Registro de Estudiantes</h4>
+                        <h4 class="font-bold text-white font-display">Registro de Votos Oficiales (Desde Excel / Google Sheets)</h4>
                         <button onclick="exportStudentData()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl font-semibold transition-all">
-                            <i class="fa-solid fa-download mr-1.5"></i> Exportar Lista
+                            <i class="fa-solid fa-download mr-1.5"></i> Exportar CSV
                         </button>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left border-collapse">
                             <thead>
                                 <tr class="bg-slate-950/50 text-slate-400 text-xs uppercase tracking-wider border-b border-slate-800">
-                                    <th class="p-4 font-semibold">Nombre y Apellidos</th>
-                                    <th class="p-4 font-semibold">Rondas Votadas</th>
-                                    <th class="p-4 font-semibold">Última Actividad</th>
+                                    <th class="p-4 font-semibold">Fecha / Hora</th>
+                                    <th class="p-4 font-semibold">Estudiante</th>
+                                    <th class="p-4 font-semibold">Ronda</th>
+                                    <th class="p-4 font-semibold">Profesor Votado</th>
                                 </tr>
                             </thead>
                             <tbody id="students-table-body" class="divide-y divide-slate-800 text-sm"></tbody>
@@ -308,7 +309,7 @@
     </div>
 
     <script>
-        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwWMqrK8BGaWpqY0mEqJ_rVID6CGeA0pvfb4cIfqZRVd9CTJzQDW-dJqwJgzRKtnRD8/exec';
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw6r1XW504kmlgtFH0ORu8mmj4a8_x9-zriHFMP9JpatKM8JFfIZ5Bh4GsVcWttLClf/exec';
 
         let currentUser = localStorage.getItem('tournament_user') || null;
         let currentView = 'student';
@@ -337,8 +338,7 @@
         ];
 
         let tournamentBrackets = { 'Octavos': [], 'Cuartos': [], 'Semifinal': [], 'Final': [] };
-        let studentVotes = JSON.parse(localStorage.getItem('tournament_votes')) || [];
-        let registeredStudents = JSON.parse(localStorage.getItem('tournament_students')) || [];
+        let cloudVotes = []; // Votos obtenidos directamente de Google Sheets
 
         window.onload = function() {
             fetchDataFromCloud().then(() => {
@@ -359,11 +359,43 @@
                     } else {
                         initDefaultBrackets();
                     }
+                    if (data.votes) {
+                        cloudVotes = data.votes;
+                        calculateVotesFromCloud();
+                    }
                 })
                 .catch(err => {
                     console.error("Error al cargar desde la nube:", err);
                     initDefaultBrackets();
                 });
+        }
+
+        // Calcula los votos de cada duelo basándose en lo que hay en Google Sheets
+        function calculateVotesFromCloud() {
+            // Reiniciar conteos
+            Object.keys(tournamentBrackets).forEach(roundKey => {
+                tournamentBrackets[roundKey].forEach(match => {
+                    match.votes1 = 0;
+                    match.votes2 = 0;
+                });
+            });
+
+            // Procesar cada voto de la nube
+            cloudVotes.forEach(vote => {
+                let roundMatches = tournamentBrackets[vote.round];
+                if (roundMatches) {
+                    roundMatches.forEach(match => {
+                        let p1 = professors.find(p => p.id === match.prof1Id);
+                        let p2 = professors.find(p => p.id === match.prof2Id);
+                        if (p1 && p1.name.toLowerCase() === vote.professor.toLowerCase()) {
+                            match.votes1++;
+                        }
+                        if (p2 && p2.name.toLowerCase() === vote.professor.toLowerCase()) {
+                            match.votes2++;
+                        }
+                    });
+                }
+            });
         }
 
         function initDefaultBrackets() {
@@ -426,15 +458,6 @@
             if (!nameInput) return;
             currentUser = nameInput;
             localStorage.setItem('tournament_user', currentUser);
-            
-            let existing = registeredStudents.find(s => s.name.toLowerCase() === currentUser.toLowerCase());
-            if (!existing) {
-                registeredStudents.push({
-                    name: currentUser, roundsVoted: [],
-                    lastActivity: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                });
-            }
-            localStorage.setItem('tournament_students', JSON.stringify(registeredStudents));
             checkUserAuth();
             document.getElementById('auth-modal').classList.add('hidden');
             showToast('¡Bienvenido, ' + currentUser + '!', 'Ya puedes registrar tus votos.');
@@ -508,33 +531,36 @@
             matches.forEach((match, index) => {
                 const prof1 = professors.find(p => p.id === match.prof1Id);
                 const prof2 = professors.find(p => p.id === match.prof2Id);
-                const userVote = studentVotes.find(v => v.studentName.toLowerCase() === (currentUser || '').toLowerCase() && v.round === studentRoundTab && v.matchId === match.id);
-                const votedProfId = userVote ? userVote.profId : null;
+                const userVote = cloudVotes.find(v => v.student.toLowerCase() === (currentUser || '').toLowerCase() && v.round === studentRoundTab && (
+                    (prof1 && v.professor.toLowerCase() === prof1.name.toLowerCase()) || 
+                    (prof2 && v.professor.toLowerCase() === prof2.name.toLowerCase())
+                ));
+                const votedProfName = userVote ? userVote.professor : null;
 
                 html += `
                     <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 match-card relative overflow-hidden flex flex-col justify-between">
                         <div class="absolute top-4 right-4 bg-slate-800 px-3 py-1 rounded-full text-xs font-bold text-slate-400 border border-slate-700">Duelo #${index + 1}</div>
                         <div class="grid grid-cols-2 gap-4 items-center my-4">
                             <div class="text-center group">
-                                <div class="relative w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-3 rounded-2xl overflow-hidden border-2 ${votedProfId === match.prof1Id ? 'border-brand-500 ring-4 ring-brand-500/20' : 'border-slate-700'} shadow-lg">
+                                <div class="relative w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-3 rounded-2xl overflow-hidden border-2 ${prof1 && votedProfName === prof1.name ? 'border-brand-500 ring-4 ring-brand-500/20' : 'border-slate-700'} shadow-lg">
                                     <img src="${prof1 ? prof1.photo : 'https://placehold.co/300x300/1e293b/ffffff?text=Prof'}" class="w-full h-full object-cover">
                                 </div>
                                 <h4 class="font-bold text-white text-sm sm:text-base truncate">${prof1 ? prof1.name : 'Por definir'}</h4>
                                 <p class="text-xs text-slate-400 truncate">${prof1 ? prof1.subject : 'Clasificando...'}</p>
                                 <button onclick="castVote('${studentRoundTab}', '${match.id}', ${prof1 ? prof1.id : 'null'})" ${!prof1 || !currentUser ? 'disabled' : ''}
-                                    class="mt-4 w-full py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center space-x-1.5 ${votedProfId === match.prof1Id ? 'bg-brand-600 text-white shadow-lg ring-2 ring-brand-400' : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'}">
-                                    <span>${votedProfId === match.prof1Id ? 'Tu Voto Emitido' : 'Votar'}</span>
+                                    class="mt-4 w-full py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center space-x-1.5 ${prof1 && votedProfName === prof1.name ? 'bg-brand-600 text-white shadow-lg ring-2 ring-brand-400' : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'}">
+                                    <span>${prof1 && votedProfName === prof1.name ? 'Tu Voto Emitido' : 'Votar'}</span>
                                 </button>
                             </div>
                             <div class="text-center group">
-                                <div class="relative w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-3 rounded-2xl overflow-hidden border-2 ${votedProfId === match.prof2Id ? 'border-brand-500 ring-4 ring-brand-500/20' : 'border-slate-700'} shadow-lg">
+                                <div class="relative w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-3 rounded-2xl overflow-hidden border-2 ${prof2 && votedProfName === prof2.name ? 'border-brand-500 ring-4 ring-brand-500/20' : 'border-slate-700'} shadow-lg">
                                     <img src="${prof2 ? prof2.photo : 'https://placehold.co/300x300/1e293b/ffffff?text=Prof'}" class="w-full h-full object-cover">
                                 </div>
                                 <h4 class="font-bold text-white text-sm sm:text-base truncate">${prof2 ? prof2.name : 'Por definir'}</h4>
                                 <p class="text-xs text-slate-400 truncate">${prof2 ? prof2.subject : 'Clasificando...'}</p>
                                 <button onclick="castVote('${studentRoundTab}', '${match.id}', ${prof2 ? prof2.id : 'null'})" ${!prof2 || !currentUser ? 'disabled' : ''}
-                                    class="mt-4 w-full py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center space-x-1.5 ${votedProfId === match.prof2Id ? 'bg-brand-600 text-white shadow-lg ring-2 ring-brand-400' : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'}">
-                                    <span>${votedProfId === match.prof2Id ? 'Tu Voto Emitido' : 'Votar'}</span>
+                                    class="mt-4 w-full py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center space-x-1.5 ${prof2 && votedProfName === prof2.name ? 'bg-brand-600 text-white shadow-lg ring-2 ring-brand-400' : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'}">
+                                    <span>${prof2 && votedProfName === prof2.name ? 'Tu Voto Emitido' : 'Votar'}</span>
                                 </button>
                             </div>
                         </div>
@@ -555,34 +581,18 @@
             const votedProfessor = professors.find(p => p.id === profId);
             const professorName = votedProfessor ? votedProfessor.name : 'Desconocido';
 
-            let existingVoteIndex = studentVotes.findIndex(v => v.studentName.toLowerCase() === currentUser.toLowerCase() && v.round === round && v.matchId === matchId);
-            if (existingVoteIndex !== -1) {
-                const oldProfId = studentVotes[existingVoteIndex].profId;
-                if (oldProfId === match.prof1Id) match.votes1 = Math.max(0, match.votes1 - 1);
-                if (oldProfId === match.prof2Id) match.votes2 = Math.max(0, match.votes2 - 1);
-                studentVotes[existingVoteIndex].profId = profId;
-            } else {
-                studentVotes.push({ studentName: currentUser, round: round, matchId: matchId, profId: profId });
-                let studentRec = registeredStudents.find(s => s.name.toLowerCase() === currentUser.toLowerCase());
-                if (studentRec) {
-                    if (!studentRec.roundsVoted.includes(round)) studentRec.roundsVoted.push(round);
-                    studentRec.lastActivity = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                }
-            }
-
-            if (profId === match.prof1Id) match.votes1++;
-            if (profId === match.prof2Id) match.votes2++;
-
-            localStorage.setItem('tournament_votes', JSON.stringify(studentVotes));
-            localStorage.setItem('tournament_students', JSON.stringify(registeredStudents));
-            renderAll();
-            showToast('¡Voto registrado!', 'Tu preferencia se ha guardado.');
-
+            // Enviar voto a Google Sheets
             fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
                 mode: 'no-cors',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: "vote", student: currentUser, round: round, professor: professorName })
+            }).then(() => {
+                showToast('¡Voto registrado!', 'Tu preferencia se ha guardado en la nube.');
+                // Recargar datos desde la nube para actualizar contadores de admin
+                setTimeout(() => {
+                    fetchDataFromCloud().then(() => renderAll());
+                }, 1000);
             }).catch(err => console.error("Error al registrar voto:", err));
         }
 
@@ -691,18 +701,21 @@
 
         function renderAdminStudents() {
             const tbody = document.getElementById('students-table-body');
-            document.getElementById('admin-student-count').innerText = registeredStudents.length;
-            if (registeredStudents.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-slate-500">No hay estudiantes registrados todavía.</td></tr>`;
+            document.getElementById('admin-student-count').innerText = cloudVotes.length;
+            if (cloudVotes.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-slate-500">No hay votos registrados todavía en la nube.</td></tr>`;
                 return;
             }
             let html = '';
-            registeredStudents.forEach(stu => {
+            // Mostrar los votos ordenados del más reciente al más antiguo
+            [...cloudVotes].reverse().forEach(v => {
+                let fechaFormateada = v.date ? new Date(v.date).toLocaleString() : 'N/D';
                 html += `
                     <tr class="hover:bg-slate-800/50 transition-all">
-                        <td class="p-4 font-bold text-white">${stu.name}</td>
-                        <td class="p-4"><div class="flex flex-wrap gap-1.5">${stu.roundsVoted.map(r => `<span class="bg-brand-500/10 text-brand-400 text-xs px-2.5 py-0.5 rounded-full">${r}</span>`).join('')}</div></td>
-                        <td class="p-4 text-slate-400 text-xs">${stu.lastActivity}</td>
+                        <td class="p-4 text-slate-400 text-xs">${fechaFormateada}</td>
+                        <td class="p-4 font-bold text-white">${v.student}</td>
+                        <td class="p-4"><span class="bg-brand-500/10 text-brand-400 text-xs px-2.5 py-0.5 rounded-full">${v.round}</span></td>
+                        <td class="p-4 text-brand-400 font-semibold">${v.professor}</td>
                     </tr>
                 `;
             });
@@ -810,16 +823,18 @@
         }
 
         function exportStudentData() {
-            let csvContent = "data:text/csv;charset=utf-8,Estudiante,Rondas Votadas,Ultima Actividad\n";
-            registeredStudents.forEach(s => { csvContent += `"${s.name}","${s.roundsVoted.join(' - ')}","${s.lastActivity}"\n`; });
+            let csvContent = "data:text/csv;charset=utf-8,Fecha,Estudiante,Ronda,Profesor\n";
+            cloudVotes.forEach(v => { 
+                csvContent += `"${v.date}","${v.student}","${v.round}","${v.professor}"\n`; 
+            });
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "estudiantes_participantes_torneo.csv");
+            link.setAttribute("download", "votos_oficiales_torneo.csv");
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-            showToast('Exportado', 'Lista descargada en formato CSV.');
+            showToast('Exportado', 'Lista de votos descargada en formato CSV.');
         }
     </script>
 </body>
