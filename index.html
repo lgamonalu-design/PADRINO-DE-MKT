@@ -344,8 +344,8 @@
 
         const ROUNDS_ORDER = ['Octavos', 'Cuartos', 'Semifinal', 'Final'];
 
-        // Initial 16 professors for Octavos (World Cup standard 16 bracket spots)
-        let professors = [
+        // Initial professors loaded from localStorage or default 16
+        let professors = JSON.parse(localStorage.getItem('tournament_professors')) || [
             { id: 1, name: 'Dr. Roberto Gómez', subject: 'Cálculo I', photo: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300' },
             { id: 2, name: 'Dra. Elena Martínez', subject: 'Física Cuántica', photo: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=300' },
             { id: 3, name: 'Prof. Carlos Ruiz', subject: 'Programación Web', photo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300' },
@@ -364,22 +364,19 @@
             { id: 16, name: 'Dra. Claudia Domínguez', subject: 'Innovación Tecnológica', photo: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&q=80&w=300' }
         ];
 
-        // Structure of matchups per round: { roundName: [ { id: 1, prof1Id: 1, prof2Id: 2, votes1: 12, votes2: 8, winnerId: null }, ... ] }
-        let tournamentBrackets = {
+        // Structure of matchups per round
+        let tournamentBrackets = JSON.parse(localStorage.getItem('tournament_brackets')) || {
             'Octavos': [],
             'Cuartos': [],
             'Semifinal': [],
             'Final': []
         };
 
-        // Student votes tracking: Array of objects { studentName: '...', round: '...', matchId: 1, profId: 1 }
         let studentVotes = JSON.parse(localStorage.getItem('tournament_votes')) || [];
-        // Registered students list: Array of objects { name: '...', roundsVoted: [...], lastActivity: '...' }
         let registeredStudents = JSON.parse(localStorage.getItem('tournament_students')) || [];
 
         // Initialize bracket matchups on load
         function initTournamentBrackets() {
-            // Generate Octavos (8 matches from 16 professors)
             if (tournamentBrackets['Octavos'].length === 0) {
                 let octavosMatches = [];
                 for (let i = 0; i < professors.length; i += 2) {
@@ -395,7 +392,6 @@
                 tournamentBrackets['Octavos'] = octavosMatches;
             }
 
-            // Generate Cuartos (4 matches)
             if (tournamentBrackets['Cuartos'].length === 0) {
                 let cuartosMatches = [];
                 for (let i = 0; i < 4; i++) {
@@ -411,7 +407,6 @@
                 tournamentBrackets['Cuartos'] = cuartosMatches;
             }
 
-            // Generate Semifinal (2 matches)
             if (tournamentBrackets['Semifinal'].length === 0) {
                 let semiMatches = [];
                 for (let i = 0; i < 2; i++) {
@@ -427,7 +422,6 @@
                 tournamentBrackets['Semifinal'] = semiMatches;
             }
 
-            // Generate Final (1 match)
             if (tournamentBrackets['Final'].length === 0) {
                 tournamentBrackets['Final'] = [{
                     id: 'final_1',
@@ -438,16 +432,15 @@
                     winnerId: null
                 }];
             }
+            saveData();
         }
 
-        // On window load
         window.onload = function() {
             initTournamentBrackets();
             checkUserAuth();
             renderAll();
         };
 
-        // Authentication Management
         function checkUserAuth() {
             const badge = document.getElementById('current-user-name');
             if (currentUser) {
@@ -471,7 +464,6 @@
             currentUser = nameInput;
             localStorage.setItem('tournament_user', currentUser);
             
-            // Register student if not exists
             let existing = registeredStudents.find(s => s.name.toLowerCase() === currentUser.toLowerCase());
             if (!existing) {
                 registeredStudents.push({
@@ -487,7 +479,6 @@
             renderAll();
         }
 
-        // View Switcher
         function switchView(view) {
             currentView = view;
             const btnStudent = document.getElementById('btn-view-student');
@@ -501,7 +492,6 @@
                 viewStudentEl.classList.remove('hidden');
                 viewAdminEl.classList.add('hidden');
             } else if (view === 'admin') {
-                // Prompt PIN
                 openAdminPinModal();
             }
         }
@@ -537,7 +527,6 @@
             }
         }
 
-        // Student Round Tabs
         function setStudentRoundTab(round) {
             studentRoundTab = round;
             ['Octavos', 'Cuartos', 'Semifinal', 'Final'].forEach(r => {
@@ -552,7 +541,6 @@
             renderStudentMatches();
         }
 
-        // Render Student Matches for Active Round
         function renderStudentMatches() {
             const container = document.getElementById('student-matches-grid');
             const matches = tournamentBrackets[studentRoundTab] || [];
@@ -574,7 +562,6 @@
                 const prof1 = professors.find(p => p.id === match.prof1Id);
                 const prof2 = professors.find(p => p.id === match.prof2Id);
 
-                // Check if current user has voted in this match
                 const userVote = studentVotes.find(v => v.studentName.toLowerCase() === (currentUser || '').toLowerCase() && v.round === studentRoundTab && v.matchId === match.id);
                 const votedProfId = userVote ? userVote.profId : null;
 
@@ -591,9 +578,7 @@
                             Duelo #${index + 1}
                         </div>
 
-                        <!-- Matchup Contestants Grid -->
                         <div class="grid grid-cols-2 gap-4 items-center my-4">
-                            <!-- Professor 1 -->
                             <div class="text-center group">
                                 <div class="relative w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-3 rounded-2xl overflow-hidden border-2 ${votedProfId === match.prof1Id ? 'border-brand-500 ring-4 ring-brand-500/20' : isP1Winning ? 'border-amber-500' : 'border-slate-700'} transition-all shadow-lg">
                                     <img src="${prof1 ? prof1.photo : 'https://placehold.co/300x300/1e293b/ffffff?text=Prof'}" alt="${prof1 ? prof1.name : 'TBD'}" class="w-full h-full object-cover">
@@ -610,7 +595,6 @@
                                 </button>
                             </div>
 
-                            <!-- Professor 2 -->
                             <div class="text-center group">
                                 <div class="relative w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-3 rounded-2xl overflow-hidden border-2 ${votedProfId === match.prof2Id ? 'border-brand-500 ring-4 ring-brand-500/20' : isP2Winning ? 'border-amber-500' : 'border-slate-700'} transition-all shadow-lg">
                                     <img src="${prof2 ? prof2.photo : 'https://placehold.co/300x300/1e293b/ffffff?text=Prof'}" alt="${prof2 ? prof2.name : 'TBD'}" class="w-full h-full object-cover">
@@ -628,7 +612,6 @@
                             </div>
                         </div>
 
-                        <!-- Live Percentage Progress Bar -->
                         <div class="mt-4 pt-4 border-t border-slate-800">
                             <div class="flex justify-between text-xs text-slate-400 mb-1.5 font-medium">
                                 <span>${match.votes1 || 0} votos (${p1Percent}%)</span>
@@ -647,7 +630,6 @@
             container.innerHTML = html;
         }
 
-        // Cast Vote Functionality with Google Sheets Sync
         function castVote(round, matchId, profId) {
             if (!currentUser) {
                 openAuthModal();
@@ -665,18 +647,15 @@
             const votedProfessor = professors.find(p => p.id === profId);
             const professorName = votedProfessor ? votedProfessor.name : 'Desconocido';
 
-            // Check if user already voted in this match
             let existingVoteIndex = studentVotes.findIndex(v => v.studentName.toLowerCase() === currentUser.toLowerCase() && v.round === round && v.matchId === matchId);
 
             if (existingVoteIndex !== -1) {
-                // Change vote
                 const oldProfId = studentVotes[existingVoteIndex].profId;
                 if (oldProfId === match.prof1Id) match.votes1 = Math.max(0, match.votes1 - 1);
                 if (oldProfId === match.prof2Id) match.votes2 = Math.max(0, match.votes2 - 1);
 
                 studentVotes[existingVoteIndex].profId = profId;
             } else {
-                // New vote
                 studentVotes.push({
                     studentName: currentUser,
                     round: round,
@@ -684,7 +663,6 @@
                     profId: profId
                 });
 
-                // Update student record
                 let studentRec = registeredStudents.find(s => s.name.toLowerCase() === currentUser.toLowerCase());
                 if (studentRec) {
                     if (!studentRec.roundsVoted.includes(round)) studentRec.roundsVoted.push(round);
@@ -692,7 +670,6 @@
                 }
             }
 
-            // Add vote count
             if (profId === match.prof1Id) match.votes1++;
             if (profId === match.prof2Id) match.votes2++;
 
@@ -700,7 +677,6 @@
             renderAll();
             showToast('¡Voto registrado con éxito!', 'Tu voz ha quedado guardada en el torneo.');
 
-            // Send data automatically to Google Sheets
             fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
                 mode: 'no-cors',
@@ -713,7 +689,6 @@
             }).catch(err => console.error("Error al sincronizar con Google Sheets:", err));
         }
 
-        // Admin Tabs
         function setAdminTab(tab) {
             adminTab = tab;
             ['matches', 'professors', 'students'].forEach(t => {
@@ -729,7 +704,6 @@
             });
         }
 
-        // Render Admin Matches Control
         function renderAdminMatches() {
             const container = document.getElementById('admin-matches-list');
             const matches = tournamentBrackets[currentTournamentRound] || [];
@@ -769,7 +743,6 @@
             container.innerHTML = html;
         }
 
-        // Render Admin Professors Grid
         function renderAdminProfessors() {
             const container = document.getElementById('admin-professors-grid');
             let html = '';
@@ -793,7 +766,6 @@
             container.innerHTML = html;
         }
 
-        // Render Admin Students Table
         function renderAdminStudents() {
             const tbody = document.getElementById('students-table-body');
             document.getElementById('admin-student-count').innerText = registeredStudents.length;
@@ -820,7 +792,6 @@
             tbody.innerHTML = html;
         }
 
-        // Advance Round Logic (World Cup style advancement)
         function advanceRound() {
             const currentMatches = tournamentBrackets[currentTournamentRound];
             let allHaveVotes = currentMatches.every(m => (m.votes1 || 0) + (m.votes2 || 0) >= 0);
@@ -830,7 +801,6 @@
                 return;
             }
 
-            // Determine winners of current round
             let winners = [];
             currentMatches.forEach(m => {
                 if (m.votes1 >= m.votes2) {
@@ -840,13 +810,11 @@
                 }
             });
 
-            // Find next round
             let currentIndex = ROUNDS_ORDER.indexOf(currentTournamentRound);
             if (currentIndex < ROUNDS_ORDER.length - 1) {
                 let nextRoundName = ROUNDS_ORDER[currentIndex + 1];
                 currentTournamentRound = nextRoundName;
 
-                // Populate next round bracket
                 let nextMatches = tournamentBrackets[nextRoundName];
                 for (let i = 0; i < winners.length; i += 2) {
                     let matchIndex = Math.floor(i / 2);
@@ -860,13 +828,13 @@
 
                 showToast('¡Ronda Avanzada!', `Se ha iniciado oficialmente la fase de ${nextRoundName}.`);
                 setStudentRoundTab(nextRoundName);
+                saveData();
                 renderAll();
             } else {
                 showToast('¡Torneo Finalizado!', 'Ya tenemos al ganador absoluto del Padrino de Promoción.', 'brand');
             }
         }
 
-        // Professor CRUD Modals
         function openAddProfessorModal() {
             document.getElementById('prof-id').value = '';
             document.getElementById('prof-name').value = '';
@@ -900,7 +868,6 @@
             const photo = photoInput || `https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300`;
 
             if (id) {
-                // Edit
                 let prof = professors.find(p => p.id == id);
                 if (prof) {
                     prof.name = name;
@@ -909,27 +876,31 @@
                 }
                 showToast('Profesor Actualizado', 'Los cambios se han guardado correctamente.');
             } else {
-                // Add new
                 const newId = professors.length > 0 ? Math.max(...professors.map(p => p.id)) + 1 : 1;
                 professors.push({ id: newId, name, subject, photo });
+                
+                // Reiniciar los octavos de final para incluir al nuevo profesor si estamos en la fase inicial
+                tournamentBrackets['Octavos'] = [];
+                initTournamentBrackets();
                 showToast('Profesor Añadido', 'El candidato se ha incorporado al torneo.');
             }
 
             closeProfModal();
-            initTournamentBrackets();
+            saveData();
             renderAll();
         }
 
         function deleteProfessor(id) {
             if (confirm('¿Estás seguro de eliminar a este profesor del torneo?')) {
                 professors = professors.filter(p => p.id !== id);
+                tournamentBrackets['Octavos'] = [];
                 initTournamentBrackets();
+                saveData();
                 renderAll();
                 showToast('Profesor Eliminado', 'Se ha retirado al candidato.', 'rose');
             }
         }
 
-        // Toast Notification Helper
         function showToast(title, desc, type = 'brand') {
             const toast = document.getElementById('toast');
             document.getElementById('toast-title').innerText = title;
@@ -941,13 +912,13 @@
             }, 3500);
         }
 
-        // Save State to LocalStorage
         function saveData() {
             localStorage.setItem('tournament_votes', JSON.stringify(studentVotes));
             localStorage.setItem('tournament_students', JSON.stringify(registeredStudents));
+            localStorage.setItem('tournament_professors', JSON.stringify(professors));
+            localStorage.setItem('tournament_brackets', JSON.stringify(tournamentBrackets));
         }
 
-        // Render All UI Elements
         function renderAll() {
             renderStudentMatches();
             renderAdminMatches();
@@ -955,7 +926,6 @@
             renderAdminStudents();
         }
 
-        // Export Student Data
         function exportStudentData() {
             let csvContent = "data:text/csv;charset=utf-8,Estudiante,Rondas Votadas,Ultima Actividad\n";
             registeredStudents.forEach(s => {
