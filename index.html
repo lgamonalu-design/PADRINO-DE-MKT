@@ -53,7 +53,7 @@
 <body class="bg-slate-950 text-slate-100 min-h-full flex flex-col selection:bg-brand-500 selection:text-white">
 
     <!-- Navigation Header -->
-    <header class="bg-slate-900/80 backdrop-blur-md border-b border-slate-800 sticky top-0 z-50">
+    <header class="bg-slate-900/85 backdrop-blur-md border-b border-slate-800 sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
             <div class="flex items-center space-x-3">
                 <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-brand-600 to-emerald-400 flex items-center justify-center shadow-lg shadow-brand-500/30 text-white text-xl font-black font-display">
@@ -120,7 +120,7 @@
                     <i class="fa-solid fa-lock"></i>
                 </div>
                 <h3 class="text-xl font-bold font-display text-white">Acceso Administrador</h3>
-                <p class="text-slate-400 text-xs mt-1">Introduce la clave de acceso (admin123)</p>
+                <p class="text-slate-400 text-xs mt-1">Introduce la contraseña de gestión</p>
             </div>
             
             <form onsubmit="handleAdminLogin(event)" class="space-y-4">
@@ -530,7 +530,7 @@
                 renderAll();
                 showToast('Acceso Concedido', 'Panel de administración activado correctamente.', 'rose');
             } else {
-                showToast('Contraseña Incorrecta', 'Usa "admin123" para acceder.', 'rose');
+                showToast('Contraseña Incorrecta', 'Contraseña incorrecta.', 'rose');
             }
         }
 
@@ -599,7 +599,7 @@
                                 <h4 class="font-bold text-white text-sm sm:text-base truncate">${prof1 ? prof1.name : 'Por definir'}</h4>
                                 <p class="text-xs text-slate-400 truncate">${prof1 ? prof1.subject : 'Clasificando...'}</p>
                                 
-                                <button onclick="castVote('${studentRoundTab}', '${match.id}', ${prof1 ? prof1.id : 'null'})" 
+                                <button onclick="castVote('${studentRoundTab}', '${match.id}',${prof1 ? prof1.id : 'null'})" 
                                     ${!prof1 || !currentUser ? 'disabled' : ''}
                                     class="mt-4 w-full py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center space-x-1.5 ${votedProfId === match.prof1Id ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/30 ring-2 ring-brand-400' : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'}">
                                     <i class="fa-solid ${votedProfId === match.prof1Id ? 'fa-check-to-slot' : 'fa-hand-point-up'}"></i>
@@ -616,342 +616,7 @@
                                 <h4 class="font-bold text-white text-sm sm:text-base truncate">${prof2 ? prof2.name : 'Por definir'}</h4>
                                 <p class="text-xs text-slate-400 truncate">${prof2 ? prof2.subject : 'Clasificando...'}</p>
                                 
-                                <button onclick="castVote('${studentRoundTab}', '${match.id}', ${prof2 ? prof2.id : 'null'})" 
+                                <button onclick="castVote('${studentRoundTab}', '${match.id}',${prof2 ? prof2.id : 'null'})" 
                                     ${!prof2 || !currentUser ? 'disabled' : ''}
                                     class="mt-4 w-full py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center space-x-1.5 ${votedProfId === match.prof2Id ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/30 ring-2 ring-brand-400' : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'}">
                                     <i class="fa-solid ${votedProfId === match.prof2Id ? 'fa-check-to-slot' : 'fa-hand-point-up'}"></i>
-                                    <span>${votedProfId === match.prof2Id ? 'Tu Voto' : 'Votar'}</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Live Percentage Progress Bar -->
-                        <div class="mt-4 pt-4 border-t border-slate-800">
-                            <div class="flex justify-between text-xs text-slate-400 mb-1.5 font-medium">
-                                <span>${match.votes1 || 0} votos (${p1Percent}%)</span>
-                                <span class="text-slate-500 uppercase tracking-widest text-[10px]">En vivo</span>
-                                <span>${match.votes2 || 0} votos (${p2Percent}%)</span>
-                            </div>
-                            <div class="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden flex">
-                                <div class="bg-brand-500 transition-all duration-500" style="width: ${p1Percent}%"></div>
-                                <div class="bg-indigo-500 transition-all duration-500" style="width: ${p2Percent}%"></div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-
-            container.innerHTML = html;
-        }
-
-        // Cast Vote Functionality
-        function castVote(round, matchId, profId) {
-            if (!currentUser) {
-                openAuthModal();
-                return;
-            }
-            if (!profId || profId === 'null') {
-                showToast('Aviso', 'Este contrincante aún no está definido.', 'rose');
-                return;
-            }
-
-            const matches = tournamentBrackets[round];
-            const match = matches.find(m => m.id === matchId);
-            if (!match) return;
-
-            // Check if user already voted in this match
-            let existingVoteIndex = studentVotes.findIndex(v => v.studentName.toLowerCase() === currentUser.toLowerCase() && v.round === round && v.matchId === matchId);
-
-            if (existingVoteIndex !== -1) {
-                // Change vote
-                const oldProfId = studentVotes[existingVoteIndex].profId;
-                if (oldProfId === match.prof1Id) match.votes1 = Math.max(0, match.votes1 - 1);
-                if (oldProfId === match.prof2Id) match.votes2 = Math.max(0, match.votes2 - 1);
-
-                studentVotes[existingVoteIndex].profId = profId;
-            } else {
-                // New vote
-                studentVotes.push({
-                    studentName: currentUser,
-                    round: round,
-                    matchId: matchId,
-                    profId: profId
-                });
-
-                // Update student record
-                let studentRec = registeredStudents.find(s => s.name.toLowerCase() === currentUser.toLowerCase());
-                if (studentRec) {
-                    if (!studentRec.roundsVoted.includes(round)) studentRec.roundsVoted.push(round);
-                    studentRec.lastActivity = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                }
-            }
-
-            // Add vote count
-            if (profId === match.prof1Id) match.votes1++;
-            if (profId === match.prof2Id) match.votes2++;
-
-            saveData();
-            renderAll();
-            showToast('¡Voto registrado con éxito!', 'Tu voz ha quedado guardada en el torneo.');
-        }
-
-        // Admin Tabs
-        function setAdminTab(tab) {
-            adminTab = tab;
-            ['matches', 'professors', 'students'].forEach(t => {
-                const btn = document.getElementById(`tab-admin-${t}`);
-                const section = document.getElementById(`admin-tab-${t}`);
-                if (t === tab) {
-                    btn.className = "pb-3 text-sm font-bold border-b-2 border-brand-500 text-brand-400 transition-all flex items-center space-x-2";
-                    section.classList.remove('hidden');
-                } else {
-                    btn.className = "pb-3 text-sm font-bold border-b-2 border-transparent text-slate-400 hover:text-white transition-all flex items-center space-x-2";
-                    section.classList.add('hidden');
-                }
-            });
-        }
-
-        // Render Admin Matches Control
-        function renderAdminMatches() {
-            const container = document.getElementById('admin-matches-list');
-            const matches = tournamentBrackets[currentTournamentRound] || [];
-            document.getElementById('admin-current-round-label').innerText = currentTournamentRound;
-
-            let html = '';
-            matches.forEach((match, index) => {
-                const prof1 = professors.find(p => p.id === match.prof1Id);
-                const prof2 = professors.find(p => p.id === match.prof2Id);
-
-                html += `
-                    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6">
-                        <div class="flex justify-between items-center mb-4">
-                            <span class="text-xs uppercase font-bold text-brand-400 bg-brand-500/10 px-3 py-1 rounded-full border border-brand-500/20">${currentTournamentRound} - Duelo #${index + 1}</span>
-                            <span class="text-xs text-slate-400">Total Votos: ${(match.votes1 || 0) + (match.votes2 || 0)}</span>
-                        </div>
-                        <div class="flex items-center justify-between bg-slate-950 p-4 rounded-2xl border border-slate-800">
-                            <div class="flex items-center space-x-3 w-1/2">
-                                <img src="${prof1 ? prof1.photo : 'https://placehold.co/100'}" class="w-12 h-12 rounded-xl object-cover">
-                                <div class="truncate">
-                                    <h5 class="text-white font-bold text-sm truncate">${prof1 ? prof1.name : 'TBD'}</h5>
-                                    <p class="text-xs text-brand-400 font-semibold">${match.votes1 || 0} votos</p>
-                                </div>
-                            </div>
-                            <span class="text-slate-500 font-black px-2">VS</span>
-                            <div class="flex items-center space-x-3 w-1/2 justify-end text-right">
-                                <div class="truncate">
-                                    <h5 class="text-white font-bold text-sm truncate">${prof2 ? prof2.name : 'TBD'}</h5>
-                                    <p class="text-xs text-brand-400 font-semibold">${match.votes2 || 0} votos</p>
-                                </div>
-                                <img src="${prof2 ? prof2.photo : 'https://placehold.co/100'}" class="w-12 h-12 rounded-xl object-cover">
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-            container.innerHTML = html;
-        }
-
-        // Render Admin Professors Grid
-        function renderAdminProfessors() {
-            const container = document.getElementById('admin-professors-grid');
-            let html = '';
-            professors.forEach(prof => {
-                html += `
-                    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-5 flex flex-col justify-between">
-                        <div class="flex items-center space-x-4 mb-4">
-                            <img src="${prof.photo}" class="w-16 h-16 rounded-2xl object-cover border border-slate-700">
-                            <div class="overflow-hidden">
-                                <h4 class="font-bold text-white text-base truncate">${prof.name}</h4>
-                                <p class="text-xs text-slate-400 truncate">${prof.subject}</p>
-                            </div>
-                        </div>
-                        <div class="flex space-x-2 pt-3 border-t border-slate-800">
-                            <button onclick="openEditProfessorModal(${prof.id})" class="w-1/2 bg-slate-800 hover:bg-slate-700 text-slate-300 py-2 rounded-xl text-xs font-semibold transition-all">Editar</button>
-                            <button onclick="deleteProfessor(${prof.id})" class="w-1/2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 py-2 rounded-xl text-xs font-semibold transition-all">Eliminar</button>
-                        </div>
-                    </div>
-                `;
-            });
-            container.innerHTML = html;
-        }
-
-        // Render Admin Students Table
-        function renderAdminStudents() {
-            const tbody = document.getElementById('students-table-body');
-            document.getElementById('admin-student-count').innerText = registeredStudents.length;
-
-            if (registeredStudents.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-slate-500">No hay estudiantes registrados todavía.</td></tr>`;
-                return;
-            }
-
-            let html = '';
-            registeredStudents.forEach(stu => {
-                html += `
-                    <tr class="hover:bg-slate-800/50 transition-all">
-                        <td class="p-4 font-bold text-white">${stu.name}</td>
-                        <td class="p-4">
-                            <div class="flex flex-wrap gap-1.5">
-                                ${stu.roundsVoted.length > 0 ? stu.roundsVoted.map(r => `<span class="bg-brand-500/10 text-brand-400 text-xs px-2.5 py-0.5 rounded-full border border-brand-500/20 font-semibold">${r}</span>`).join('') : '<span class="text-slate-500 text-xs">Ninguna</span>'}
-                            </div>
-                        </td>
-                        <td class="p-4 text-slate-400 text-xs">${stu.lastActivity}</td>
-                    </tr>
-                `;
-            });
-            tbody.innerHTML = html;
-        }
-
-        // Advance Round Logic (World Cup style advancement)
-        function advanceRound() {
-            const currentMatches = tournamentBrackets[currentTournamentRound];
-            let allHaveVotes = currentMatches.every(m => (m.votes1 || 0) + (m.votes2 || 0) >= 0);
-
-            if (!allHaveVotes) {
-                showToast('Aviso', 'Aún hay enfrentamientos pendientes.', 'rose');
-                return;
-            }
-
-            // Determine winners of current round
-            let winners = [];
-            currentMatches.forEach(m => {
-                if (m.votes1 >= m.votes2) {
-                    winners.push(m.prof1Id);
-                } else {
-                    winners.push(m.prof2Id);
-                }
-            });
-
-            // Find next round
-            let currentIndex = ROUNDS_ORDER.indexOf(currentTournamentRound);
-            if (currentIndex < ROUNDS_ORDER.length - 1) {
-                let nextRoundName = ROUNDS_ORDER[currentIndex + 1];
-                currentTournamentRound = nextRoundName;
-
-                // Populate next round bracket
-                let nextMatches = tournamentBrackets[nextRoundName];
-                for (let i = 0; i < winners.length; i += 2) {
-                    let matchIndex = Math.floor(i / 2);
-                    if (nextMatches[matchIndex]) {
-                        nextMatches[matchIndex].prof1Id = winners[i];
-                        nextMatches[matchIndex].prof2Id = winners[i+1] !== undefined ? winners[i+1] : null;
-                        nextMatches[matchIndex].votes1 = 0;
-                        nextMatches[matchIndex].votes2 = 0;
-                    }
-                }
-
-                showToast('¡Ronda Avanzada!', `Se ha iniciado oficialmente la fase de ${nextRoundName}.`);
-                setStudentRoundTab(nextRoundName);
-                renderAll();
-            } else {
-                showToast('¡Torneo Finalizado!', 'Ya tenemos al ganador absoluto del Padrino de Promoción.', 'brand');
-            }
-        }
-
-        // Professor CRUD Modals
-        function openAddProfessorModal() {
-            document.getElementById('prof-id').value = '';
-            document.getElementById('prof-name').value = '';
-            document.getElementById('prof-subject').value = '';
-            document.getElementById('prof-photo').value = '';
-            document.getElementById('prof-modal-title').innerText = 'Añadir Nuevo Profesor';
-            document.getElementById('prof-modal').classList.remove('hidden');
-        }
-
-        function openEditProfessorModal(id) {
-            const prof = professors.find(p => p.id === id);
-            if (!prof) return;
-            document.getElementById('prof-id').value = prof.id;
-            document.getElementById('prof-name').value = prof.name;
-            document.getElementById('prof-subject').value = prof.subject;
-            document.getElementById('prof-photo').value = prof.photo;
-            document.getElementById('prof-modal-title').innerText = 'Editar Profesor';
-            document.getElementById('prof-modal').classList.remove('hidden');
-        }
-
-        function closeProfModal() {
-            document.getElementById('prof-modal').classList.add('hidden');
-        }
-
-        function handleProfFormSubmit(event) {
-            event.preventDefault();
-            const id = document.getElementById('prof-id').value;
-            const name = document.getElementById('prof-name').value;
-            const subject = document.getElementById('prof-subject').value;
-            const photoInput = document.getElementById('prof-photo').value.trim();
-            const photo = photoInput || `https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300`;
-
-            if (id) {
-                // Edit
-                let prof = professors.find(p => p.id == id);
-                if (prof) {
-                    prof.name = name;
-                    prof.subject = subject;
-                    prof.photo = photo;
-                }
-                showToast('Profesor Actualizado', 'Los cambios se han guardado correctamente.');
-            } else {
-                // Add new
-                const newId = professors.length > 0 ? Math.max(...professors.map(p => p.id)) + 1 : 1;
-                professors.push({ id: newId, name, subject, photo });
-                showToast('Profesor Añadido', 'El candidato se ha incorporado al torneo.');
-            }
-
-            closeProfModal();
-            initTournamentBrackets();
-            renderAll();
-        }
-
-        function deleteProfessor(id) {
-            if (confirm('¿Estás seguro de eliminar a este profesor del torneo?')) {
-                professors = professors.filter(p => p.id !== id);
-                initTournamentBrackets();
-                renderAll();
-                showToast('Profesor Eliminado', 'Se ha retirado al candidato.', 'rose');
-            }
-        }
-
-        // Toast Notification Helper
-        function showToast(title, desc, type = 'brand') {
-            const toast = document.getElementById('toast');
-            document.getElementById('toast-title').innerText = title;
-            document.getElementById('toast-desc').innerText = desc;
-            
-            toast.classList.remove('translate-y-24', 'opacity-0');
-            setTimeout(() => {
-                toast.classList.add('translate-y-24', 'opacity-0');
-            }, 3500);
-        }
-
-        // Save State to LocalStorage
-        function saveData() {
-            localStorage.setItem('tournament_votes', JSON.stringify(studentVotes));
-            localStorage.setItem('tournament_students', JSON.stringify(registeredStudents));
-        }
-
-        // Render All UI Elements
-        function renderAll() {
-            renderStudentMatches();
-            renderAdminMatches();
-            renderAdminProfessors();
-            renderAdminStudents();
-        }
-
-        // Export Student Data
-        function exportStudentData() {
-            let csvContent = "data:text/csv;charset=utf-8,Estudiante,Rondas Votadas,Ultima Actividad\n";
-            registeredStudents.forEach(s => {
-                csvContent += `"${s.name}","${s.roundsVoted.join(' - ')}","${s.lastActivity}"\n`;
-            });
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "estudiantes_participantes_torneo.csv");
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            showToast('Datos Exportados', 'Se ha descargado el archivo CSV con la lista de participantes.');
-        }
-    </script>
-</body>
-</html>
