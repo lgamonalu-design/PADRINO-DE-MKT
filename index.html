@@ -614,4 +614,213 @@
                             <option value="">-- Seleccionar --</option>
                             ${professors.map(p => `<option value="${p.id}" ${match.prof1Id === p.id ? 'selected' : ''}>${p.name}</option>`).join('')}
                         </select>
-                        <span class="text-slate-50
+                        <span class="text-slate-500 font-bold">VS</span>
+                        <select id="bracket_m${index}_p2" class="bg-slate-900 border border-slate-700 text-white text-sm rounded-xl px-3 py-2 w-full sm:w-48">
+                            <option value="">-- Seleccionar --</option>
+                            ${professors.map(p => `<option value="${p.id}" ${match.prof2Id === p.id ? 'selected' : ''}>${p.name}</option>`).join('')}
+                        </select>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function saveCustomBrackets() {
+            const octavosMatches = tournamentBrackets['Octavos'] || [];
+            for (let i = 0; i < octavosMatches.length; i++) {
+                const p1Val = document.getElementById(`bracket_m${i}_p1`).value;
+                const p2Val = document.getElementById(`bracket_m${i}_p2`).value;
+                octavosMatches[i].prof1Id = p1Val ? parseInt(p1Val) : null;
+                octavosMatches[i].prof2Id = p2Val ? parseInt(p2Val) : null;
+            }
+            syncConfigToCloud();
+            renderAll();
+            showToast('Cruces Guardados', 'Sincronizados en todos los dispositivos.');
+        }
+
+        function renderAdminMatches() {
+            const container = document.getElementById('admin-matches-list');
+            const matches = tournamentBrackets[currentTournamentRound] || [];
+            document.getElementById('admin-current-round-label').innerText = currentTournamentRound;
+            let html = '';
+            matches.forEach((match, index) => {
+                const prof1 = professors.find(p => p.id === match.prof1Id);
+                const prof2 = professors.find(p => p.id === match.prof2Id);
+                html += `
+                    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="text-xs uppercase font-bold text-brand-400 bg-brand-500/10 px-3 py-1 rounded-full">${currentTournamentRound} - Duelo #${index + 1}</span>
+                            <span class="text-xs text-slate-400">Total Votos: ${(match.votes1 || 0) + (match.votes2 || 0)}</span>
+                        </div>
+                        <div class="flex items-center justify-between bg-slate-950 p-4 rounded-2xl border border-slate-800">
+                            <div class="flex items-center space-x-3 w-1/2">
+                                <img src="${prof1 ? prof1.photo : 'https://placehold.co/100'}" class="w-12 h-12 rounded-xl object-cover">
+                                <div class="truncate"><h5 class="text-white font-bold text-sm truncate">${prof1 ? prof1.name : 'TBD'}</h5><p class="text-xs text-brand-400">${match.votes1 || 0} votos</p></div>
+                            </div>
+                            <span class="text-slate-500 font-black px-2">VS</span>
+                            <div class="flex items-center space-x-3 w-1/2 justify-end text-right">
+                                <div class="truncate"><h5 class="text-white font-bold text-sm truncate">${prof2 ? prof2.name : 'TBD'}</h5><p class="text-xs text-brand-400">${match.votes2 || 0} votos</p></div>
+                                <img src="${prof2 ? prof2.photo : 'https://placehold.co/100'}" class="w-12 h-12 rounded-xl object-cover">
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function renderAdminProfessors() {
+            const container = document.getElementById('admin-professors-grid');
+            let html = '';
+            professors.forEach(prof => {
+                html += `
+                    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-5 flex flex-col justify-between">
+                        <div class="flex items-center space-x-4 mb-4">
+                            <img src="${prof.photo}" class="w-16 h-16 rounded-2xl object-cover border border-slate-700">
+                            <div class="overflow-hidden"><h4 class="font-bold text-white text-base truncate">${prof.name}</h4><p class="text-xs text-slate-400 truncate">${prof.subject}</p></div>
+                        </div>
+                        <div class="flex space-x-2 pt-3 border-t border-slate-800">
+                            <button onclick="openEditProfessorModal(${prof.id})" class="w-1/2 bg-slate-800 hover:bg-slate-700 text-slate-300 py-2 rounded-xl text-xs font-semibold">Editar</button>
+                            <button onclick="deleteProfessor(${prof.id})" class="w-1/2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 py-2 rounded-xl text-xs font-semibold">Eliminar</button>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function renderAdminStudents() {
+            const tbody = document.getElementById('students-table-body');
+            document.getElementById('admin-student-count').innerText = registeredStudents.length;
+            if (registeredStudents.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-slate-500">No hay estudiantes registrados todavía.</td></tr>`;
+                return;
+            }
+            let html = '';
+            registeredStudents.forEach(stu => {
+                html += `
+                    <tr class="hover:bg-slate-800/50 transition-all">
+                        <td class="p-4 font-bold text-white">${stu.name}</td>
+                        <td class="p-4"><div class="flex flex-wrap gap-1.5">${stu.roundsVoted.map(r => `<span class="bg-brand-500/10 text-brand-400 text-xs px-2.5 py-0.5 rounded-full">${r}</span>`).join('')}</div></td>
+                        <td class="p-4 text-slate-400 text-xs">${stu.lastActivity}</td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+
+        function advanceRound() {
+            const currentMatches = tournamentBrackets[currentTournamentRound];
+            let winners = [];
+            currentMatches.forEach(m => { winners.push(m.votes1 >= m.votes2 ? m.prof1Id : m.prof2Id); });
+
+            let currentIndex = ROUNDS_ORDER.indexOf(currentTournamentRound);
+            if (currentIndex < ROUNDS_ORDER.length - 1) {
+                let nextRoundName = ROUNDS_ORDER[currentIndex + 1];
+                currentTournamentRound = nextRoundName;
+                let nextMatches = tournamentBrackets[nextRoundName];
+                for (let i = 0; i < winners.length; i += 2) {
+                    let matchIndex = Math.floor(i / 2);
+                    if (nextMatches[matchIndex]) {
+                        nextMatches[matchIndex].prof1Id = winners[i];
+                        nextMatches[matchIndex].prof2Id = winners[i+1] !== undefined ? winners[i+1] : null;
+                        nextMatches[matchIndex].votes1 = 0; nextMatches[matchIndex].votes2 = 0;
+                    }
+                }
+                syncConfigToCloud();
+                showToast('¡Ronda Avanzada!', `Iniciada la fase de ${nextRoundName}.`);
+                setStudentRoundTab(nextRoundName);
+                renderAll();
+            } else {
+                showToast('¡Torneo Finalizado!', 'Tenemos al ganador absoluto.');
+            }
+        }
+
+        function openAddProfessorModal() {
+            document.getElementById('prof-id').value = '';
+            document.getElementById('prof-name').value = '';
+            document.getElementById('prof-subject').value = '';
+            document.getElementById('prof-photo').value = '';
+            document.getElementById('prof-modal-title').innerText = 'Añadir Nuevo Profesor';
+            document.getElementById('prof-modal').classList.remove('hidden');
+        }
+
+        function openEditProfessorModal(id) {
+            const prof = professors.find(p => p.id === id);
+            if (!prof) return;
+            document.getElementById('prof-id').value = prof.id;
+            document.getElementById('prof-name').value = prof.name;
+            document.getElementById('prof-subject').value = prof.subject;
+            document.getElementById('prof-photo').value = prof.photo;
+            document.getElementById('prof-modal-title').innerText = 'Editar Profesor';
+            document.getElementById('prof-modal').classList.remove('hidden');
+        }
+
+        function closeProfModal() { document.getElementById('prof-modal').classList.add('hidden'); }
+
+        function handleProfFormSubmit(event) {
+            event.preventDefault();
+            const id = document.getElementById('prof-id').value;
+            const name = document.getElementById('prof-name').value;
+            const subject = document.getElementById('prof-subject').value;
+            const photoInput = document.getElementById('prof-photo').value.trim();
+            const photo = photoInput || `https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300`;
+
+            if (id) {
+                let prof = professors.find(p => p.id == id);
+                if (prof) { prof.name = name; prof.subject = subject; prof.photo = photo; }
+                showToast('Actualizado', 'Profesor actualizado correctamente.');
+            } else {
+                const newId = professors.length > 0 ? Math.max(...professors.map(p => p.id)) + 1 : 1;
+                professors.push({ id: newId, name, subject, photo });
+                tournamentBrackets['Octavos'] = [];
+                initDefaultBrackets();
+                showToast('Añadido', 'Profesor incorporado al torneo.');
+            }
+
+            closeProfModal();
+            syncConfigToCloud();
+            renderAll();
+        }
+
+        function deleteProfessor(id) {
+            if (confirm('¿Estás seguro de eliminar a este profesor?')) {
+                professors = professors.filter(p => p.id !== id);
+                tournamentBrackets['Octavos'] = [];
+                initDefaultBrackets();
+                syncConfigToCloud();
+                renderAll();
+                showToast('Eliminado', 'Profesor retirado del torneo.', 'rose');
+            }
+        }
+
+        function showToast(title, desc, type = 'brand') {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-title').innerText = title;
+            document.getElementById('toast-desc').innerText = desc;
+            toast.classList.remove('translate-y-24', 'opacity-0');
+            setTimeout(() => { toast.classList.add('translate-y-24', 'opacity-0'); }, 3500);
+        }
+
+        function renderAll() {
+            renderStudentMatches();
+            renderAdminMatches();
+            renderAdminProfessors();
+            renderAdminStudents();
+        }
+
+        function exportStudentData() {
+            let csvContent = "data:text/csv;charset=utf-8,Estudiante,Rondas Votadas,Ultima Actividad\n";
+            registeredStudents.forEach(s => { csvContent += `"${s.name}","${s.roundsVoted.join(' - ')}","${s.lastActivity}"\n`; });
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "estudiantes_participantes_torneo.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast('Exportado', 'Lista descargada en formato CSV.');
+        }
+    </script>
+</body>
+</html>
