@@ -145,7 +145,7 @@
                             <span>Fase Activa</span>
                         </div>
                         <h2 id="active-round-title" class="text-3xl sm:text-4xl font-black font-display text-white">Octavos de Final</h2>
-                        <p class="text-slate-400 text-sm mt-1 max-w-xl">Vota por tu profesor favorito en secreto. Los resultados se mantienen ocultos para evitar sesgos.</p>
+                        <p class="text-slate-400 text-sm mt-1 max-w-xl">Vota por tu profesor favorito en secreto. Puedes cambiar de opinión en cualquier duelo antes del cierre de ronda.</p>
                     </div>
 
                     <div class="flex items-center bg-slate-950/60 p-1.5 rounded-2xl border border-slate-800 overflow-x-auto">
@@ -220,7 +220,7 @@
                         </div>
                         <div>
                             <h4 class="text-white font-bold">Ronda Actual: <span id="admin-current-round-label" class="text-brand-400">Octavos de Final</span></h4>
-                            <p class="text-xs text-slate-400">Los votos se calculan en base al registro oficial de Google Sheets.</p>
+                            <p class="text-xs text-slate-400">Cada usuario cuenta con un único voto por duelo (actualizable).</p>
                         </div>
                     </div>
                     <button onclick="advanceRound()" class="bg-brand-600 hover:bg-brand-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-md">
@@ -253,7 +253,7 @@
             <div id="admin-tab-students" class="space-y-6 hidden">
                 <div class="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-xl">
                     <div class="p-6 border-b border-slate-800 flex justify-between items-center">
-                        <h4 class="font-bold text-white font-display">Registro de Votos Oficiales (Desde Excel / Google Sheets)</h4>
+                        <h4 class="font-bold text-white font-display">Registro de Votos Oficiales (Único por Duelo)</h4>
                         <button onclick="exportStudentData()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl font-semibold transition-all">
                             <i class="fa-solid fa-download mr-1.5"></i> Exportar CSV
                         </button>
@@ -265,6 +265,7 @@
                                     <th class="p-4 font-semibold">Fecha / Hora</th>
                                     <th class="p-4 font-semibold">Estudiante</th>
                                     <th class="p-4 font-semibold">Ronda</th>
+                                    <th class="p-4 font-semibold">Duelo ID</th>
                                     <th class="p-4 font-semibold">Profesor Votado</th>
                                 </tr>
                             </thead>
@@ -309,7 +310,7 @@
     </div>
 
     <script>
-        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw6r1XW504kmlgtFH0ORu8mmj4a8_x9-zriHFMP9JpatKM8JFfIZ5Bh4GsVcWttLClf/exec';
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwTECy7w73j8wgipw19ew0TPeQzT0TJcEfzOYZ_dDpouTaLjatbIQbofVwB2lDx_CAz/exec';
 
         let currentUser = localStorage.getItem('tournament_user') || null;
         let currentView = 'student';
@@ -338,7 +339,7 @@
         ];
 
         let tournamentBrackets = { 'Octavos': [], 'Cuartos': [], 'Semifinal': [], 'Final': [] };
-        let cloudVotes = []; // Votos obtenidos directamente de Google Sheets
+        let cloudVotes = [];
 
         window.onload = function() {
             fetchDataFromCloud().then(() => {
@@ -370,9 +371,7 @@
                 });
         }
 
-        // Calcula los votos de cada duelo basándose en lo que hay en Google Sheets
         function calculateVotesFromCloud() {
-            // Reiniciar conteos
             Object.keys(tournamentBrackets).forEach(roundKey => {
                 tournamentBrackets[roundKey].forEach(match => {
                     match.votes1 = 0;
@@ -380,18 +379,18 @@
                 });
             });
 
-            // Procesar cada voto de la nube
             cloudVotes.forEach(vote => {
                 let roundMatches = tournamentBrackets[vote.round];
                 if (roundMatches) {
                     roundMatches.forEach(match => {
-                        let p1 = professors.find(p => p.id === match.prof1Id);
-                        let p2 = professors.find(p => p.id === match.prof2Id);
-                        if (p1 && p1.name.toLowerCase() === vote.professor.toLowerCase()) {
-                            match.votes1++;
-                        }
-                        if (p2 && p2.name.toLowerCase() === vote.professor.toLowerCase()) {
-                            match.votes2++;
+                        if (match.id === vote.matchId) {
+                            let p1 = professors.find(p => p.id === match.prof1Id);
+                            let p2 = professors.find(p => p.id === match.prof2Id);
+                            if (p1 && p1.name.toLowerCase() === vote.professor.toLowerCase()) {
+                                match.votes1++;
+                            } else if (p2 && p2.name.toLowerCase() === vote.professor.toLowerCase()) {
+                                match.votes2++;
+                            }
                         }
                     });
                 }
@@ -531,10 +530,7 @@
             matches.forEach((match, index) => {
                 const prof1 = professors.find(p => p.id === match.prof1Id);
                 const prof2 = professors.find(p => p.id === match.prof2Id);
-                const userVote = cloudVotes.find(v => v.student.toLowerCase() === (currentUser || '').toLowerCase() && v.round === studentRoundTab && (
-                    (prof1 && v.professor.toLowerCase() === prof1.name.toLowerCase()) || 
-                    (prof2 && v.professor.toLowerCase() === prof2.name.toLowerCase())
-                ));
+                const userVote = cloudVotes.find(v => v.student.toLowerCase() === (currentUser || '').toLowerCase() && v.round === studentRoundTab && v.matchId === match.id);
                 const votedProfName = userVote ? userVote.professor : null;
 
                 html += `
@@ -581,15 +577,13 @@
             const votedProfessor = professors.find(p => p.id === profId);
             const professorName = votedProfessor ? votedProfessor.name : 'Desconocido';
 
-            // Enviar voto a Google Sheets
             fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
                 mode: 'no-cors',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: "vote", student: currentUser, round: round, professor: professorName })
+                body: JSON.stringify({ action: "vote", student: currentUser, round: round, matchId: matchId, professor: professorName })
             }).then(() => {
-                showToast('¡Voto registrado!', 'Tu preferencia se ha guardado en la nube.');
-                // Recargar datos desde la nube para actualizar contadores de admin
+                showToast('¡Voto registrado!', 'Tu preferencia se ha actualizado en la nube.');
                 setTimeout(() => {
                     fetchDataFromCloud().then(() => renderAll());
                 }, 1000);
@@ -703,11 +697,10 @@
             const tbody = document.getElementById('students-table-body');
             document.getElementById('admin-student-count').innerText = cloudVotes.length;
             if (cloudVotes.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-slate-500">No hay votos registrados todavía en la nube.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-slate-500">No hay votos registrados todavía en la nube.</td></tr>`;
                 return;
             }
             let html = '';
-            // Mostrar los votos ordenados del más reciente al más antiguo
             [...cloudVotes].reverse().forEach(v => {
                 let fechaFormateada = v.date ? new Date(v.date).toLocaleString() : 'N/D';
                 html += `
@@ -715,6 +708,7 @@
                         <td class="p-4 text-slate-400 text-xs">${fechaFormateada}</td>
                         <td class="p-4 font-bold text-white">${v.student}</td>
                         <td class="p-4"><span class="bg-brand-500/10 text-brand-400 text-xs px-2.5 py-0.5 rounded-full">${v.round}</span></td>
+                        <td class="p-4 text-slate-400 text-xs">${v.matchId || 'N/D'}</td>
                         <td class="p-4 text-brand-400 font-semibold">${v.professor}</td>
                     </tr>
                 `;
@@ -823,9 +817,9 @@
         }
 
         function exportStudentData() {
-            let csvContent = "data:text/csv;charset=utf-8,Fecha,Estudiante,Ronda,Profesor\n";
+            let csvContent = "data:text/csv;charset=utf-8,Fecha,Estudiante,Ronda,MatchId,Profesor\n";
             cloudVotes.forEach(v => { 
-                csvContent += `"${v.date}","${v.student}","${v.round}","${v.professor}"\n`; 
+                csvContent += `"${v.date}","${v.student}","${v.round}","${v.matchId}","${v.professor}"\n`; 
             });
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
