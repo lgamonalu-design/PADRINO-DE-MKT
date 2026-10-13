@@ -83,14 +83,18 @@
                     <i class="fa-solid fa-id-card"></i>
                 </div>
                 <h3 class="text-2xl font-black font-display text-white">Identifícate para Votar</h3>
-                <p class="text-slate-400 text-sm mt-1">Introduce tu nombre completo para validar tu voto.</p>
+                <p class="text-slate-400 text-sm mt-1">Introduce tu nombre y apellidos reales. Votos sin nombre completo o duplicados sospechosos serán anulados automáticamente.</p>
             </div>
             
             <form id="auth-form" onsubmit="handleUserLogin(event)" class="space-y-4">
                 <div>
-                    <label class="block text-xs uppercase font-bold text-slate-400 mb-1">Nombre y Apellidos</label>
+                    <label class="block text-xs uppercase font-bold text-slate-400 mb-1">Nombre Completo</label>
                     <input type="text" id="input-fullname" required placeholder="Ej. Alejandro Pérez Gómez"
                         class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 font-medium">
+                </div>
+                <div class="bg-amber-500/10 border border-amber-500/20 p-3 rounded-xl text-xs text-amber-300 flex items-start space-x-2">
+                    <i class="fa-solid fa-triangle-exclamation mt-0.5"></i>
+                    <span>Aviso: Los votos anónimos o con nombres incompletos no contabilizarán en los resultados oficiales.</span>
                 </div>
                 <button type="submit" class="w-full bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-brand-600/30 transition-all flex items-center justify-center space-x-2">
                     <span>¡Entrar al Torneo!</span>
@@ -145,7 +149,7 @@
                             <span>Fase Activa</span>
                         </div>
                         <h2 id="active-round-title" class="text-3xl sm:text-4xl font-black font-display text-white">Octavos de Final</h2>
-                        <p class="text-slate-400 text-sm mt-1 max-w-xl">Vota por tu profesor favorito en secreto. Puedes cambiar de opinión en cualquier duelo antes del cierre de ronda.</p>
+                        <p class="text-slate-400 text-sm mt-1 max-w-xl">Vota por tu profesor favorito. Solo se permite un voto válido por duelo por cada estudiante registrado.</p>
                     </div>
 
                     <div class="flex items-center bg-slate-950/60 p-1.5 rounded-2xl border border-slate-800 overflow-x-auto">
@@ -177,8 +181,8 @@
                         <i class="fa-solid fa-shield-halved"></i>
                         <span>Panel de Control (Administrador)</span>
                     </div>
-                    <h2 class="text-3xl font-black font-display text-white">Gestión del Torneo</h2>
-                    <p class="text-slate-400 text-sm mt-1">Los datos se sincronizan directamente con tu Google Sheets.</p>
+                    <h2 class="text-3xl font-black font-display text-white">Gestión Avanzada del Torneo</h2>
+                    <p class="text-slate-400 text-sm mt-1">Inspecciona porcentajes, borra votos falsos y controla las rondas.</p>
                 </div>
 
                 <div class="flex items-center space-x-3 flex-wrap gap-2">
@@ -186,29 +190,29 @@
                         <i class="fa-solid fa-user-plus"></i>
                         <span>Añadir Profesor</span>
                     </button>
-                    <button onclick="advanceRound()" class="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-amber-600/30 transition-all flex items-center space-x-2">
-                        <i class="fa-solid fa-forward-step"></i>
-                        <span>Avanzar Ronda</span>
+                    <button onclick="resetTournamentConfirm()" class="bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-600/40 px-4 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center space-x-2">
+                        <i class="fa-solid fa-rotate-right"></i>
+                        <span>Reiniciar Torneo</span>
                     </button>
                 </div>
             </div>
 
             <div class="flex border-b border-slate-800 space-x-6 overflow-x-auto">
                 <button onclick="setAdminTab('matches')" id="tab-admin-matches" class="pb-3 text-sm font-bold border-b-2 border-brand-500 text-brand-400 transition-all flex items-center space-x-2 whitespace-nowrap">
-                    <i class="fa-solid fa-sitemap"></i>
-                    <span>Control de Votos y Resultados</span>
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span>Resultados Visuales y Porcentajes</span>
                 </button>
                 <button onclick="setAdminTab('brackets')" id="tab-admin-brackets" class="pb-3 text-sm font-bold border-b-2 border-transparent text-slate-400 hover:text-white transition-all flex items-center space-x-2 whitespace-nowrap">
                     <i class="fa-solid fa-pen-to-square"></i>
-                    <span>Organizar Cruces (Bracket Editor)</span>
+                    <span>Organizar Cruces</span>
                 </button>
                 <button onclick="setAdminTab('professors')" id="tab-admin-professors" class="pb-3 text-sm font-bold border-b-2 border-transparent text-slate-400 hover:text-white transition-all flex items-center space-x-2 whitespace-nowrap">
                     <i class="fa-solid fa-chalkboard-user"></i>
                     <span>Listado de Profesores</span>
                 </button>
                 <button onclick="setAdminTab('students')" id="tab-admin-students" class="pb-3 text-sm font-bold border-b-2 border-transparent text-slate-400 hover:text-white transition-all flex items-center space-x-2 whitespace-nowrap">
-                    <i class="fa-solid fa-users"></i>
-                    <span>Estudiantes y Votos (<span id="admin-student-count">0</span>)</span>
+                    <i class="fa-solid fa-users-viewfinder"></i>
+                    <span>Auditoría de Votos (<span id="admin-student-count">0</span>)</span>
                 </button>
             </div>
 
@@ -220,12 +224,17 @@
                         </div>
                         <div>
                             <h4 class="text-white font-bold">Ronda Actual: <span id="admin-current-round-label" class="text-brand-400">Octavos de Final</span></h4>
-                            <p class="text-xs text-slate-400">Cada usuario cuenta con un único voto por duelo (actualizable).</p>
+                            <p class="text-xs text-slate-400">Visualiza los porcentajes de victoria y avanza o retrocede rondas libremente.</p>
                         </div>
                     </div>
-                    <button onclick="advanceRound()" class="bg-brand-600 hover:bg-brand-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-md">
-                        Cerrar Ronda y Avanzar
-                    </button>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="revertRound()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-xs font-bold transition-all border border-slate-700">
+                            <i class="fa-solid fa-backward-step mr-1"></i> Retroceder Ronda
+                        </button>
+                        <button onclick="advanceRound()" class="bg-brand-600 hover:bg-brand-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-md">
+                            Avanzar Ronda <i class="fa-solid fa-forward-step ml-1"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <div id="admin-matches-list" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
@@ -235,7 +244,7 @@
                 <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6">
                     <div class="mb-6">
                         <h4 class="text-lg font-bold text-white font-display">Personalizar Cruces de Octavos</h4>
-                        <p class="text-xs text-slate-400 mt-1">Selecciona qué profesor compite contra quién y guarda los cambios para sincronizarlo.</p>
+                        <p class="text-xs text-slate-400 mt-1">Selecciona qué profesor compite contra quién y guarda los cambios.</p>
                     </div>
                     <div id="custom-bracket-editor-grid" class="space-y-4"></div>
                     <div class="mt-6 text-right">
@@ -252,8 +261,11 @@
 
             <div id="admin-tab-students" class="space-y-6 hidden">
                 <div class="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-xl">
-                    <div class="p-6 border-b border-slate-800 flex justify-between items-center">
-                        <h4 class="font-bold text-white font-display">Registro de Votos Oficiales (Único por Duelo)</h4>
+                    <div class="p-6 border-b border-slate-800 flex justify-between items-center flex-wrap gap-4">
+                        <div>
+                            <h4 class="font-bold text-white font-display">Auditoría y Borrado de Votos</h4>
+                            <p class="text-xs text-slate-400 mt-0.5">Elimina inmediatamente cualquier voto falso, sospechoso o malintencionado.</p>
+                        </div>
                         <button onclick="exportStudentData()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl font-semibold transition-all">
                             <i class="fa-solid fa-download mr-1.5"></i> Exportar CSV
                         </button>
@@ -265,8 +277,9 @@
                                     <th class="p-4 font-semibold">Fecha / Hora</th>
                                     <th class="p-4 font-semibold">Estudiante</th>
                                     <th class="p-4 font-semibold">Ronda</th>
-                                    <th class="p-4 font-semibold">Duelo ID</th>
-                                    <th class="p-4 font-semibold">Profesor Votado</th>
+                                    <th class="p-4 font-semibold">Duelo</th>
+                                    <th class="p-4 font-semibold">Profesor</th>
+                                    <th class="p-4 font-semibold text-right">Acción</th>
                                 </tr>
                             </thead>
                             <tbody id="students-table-body" class="divide-y divide-slate-800 text-sm"></tbody>
@@ -310,7 +323,7 @@
     </div>
 
     <script>
-        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwTECy7w73j8wgipw19ew0TPeQzT0TJcEfzOYZ_dDpouTaLjatbIQbofVwB2lDx_CAz/exec';
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwzAn4OM8OajS80NDARbuPc2XH1p68v1SqPVQKhdYky62luLNERe-0zZXFP6yZMkgBs/exec';
 
         let currentUser = localStorage.getItem('tournament_user') || null;
         let currentView = 'student';
@@ -380,6 +393,9 @@
             });
 
             cloudVotes.forEach(vote => {
+                let studentName = (vote.student || "").trim();
+                if (!studentName || studentName.toLowerCase() === "anónimo" || studentName.toLowerCase() === "invitado") return;
+
                 let roundMatches = tournamentBrackets[vote.round];
                 if (roundMatches) {
                     roundMatches.forEach(match => {
@@ -459,7 +475,7 @@
             localStorage.setItem('tournament_user', currentUser);
             checkUserAuth();
             document.getElementById('auth-modal').classList.add('hidden');
-            showToast('¡Bienvenido, ' + currentUser + '!', 'Ya puedes registrar tus votos.');
+            showToast('¡Bienvenido, ' + currentUser + '!', 'Ya puedes registrar tus votos válidos.');
             renderAll();
         }
 
@@ -583,7 +599,7 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: "vote", student: currentUser, round: round, matchId: matchId, professor: professorName })
             }).then(() => {
-                showToast('¡Voto registrado!', 'Tu preferencia se ha actualizado en la nube.');
+                showToast('¡Voto registrado!', 'Tu preferencia ha sido contabilizada con éxito.');
                 setTimeout(() => {
                     fetchDataFromCloud().then(() => renderAll());
                 }, 1000);
@@ -646,25 +662,56 @@
             const container = document.getElementById('admin-matches-list');
             const matches = tournamentBrackets[currentTournamentRound] || [];
             document.getElementById('admin-current-round-label').innerText = currentTournamentRound;
+            
+            if (matches.length === 0) {
+                container.innerHTML = `<div class="col-span-2 text-center py-12 bg-slate-900 border border-slate-800 rounded-3xl"><h4 class="text-slate-400">No hay duelos para esta ronda</h4></div>`;
+                return;
+            }
+
             let html = '';
             matches.forEach((match, index) => {
                 const prof1 = professors.find(p => p.id === match.prof1Id);
                 const prof2 = professors.find(p => p.id === match.prof2Id);
+                const v1 = match.votes1 || 0;
+                const v2 = match.votes2 || 0;
+                const total = v1 + v2;
+                const pct1 = total > 0 ? Math.round((v1 / total) * 100) : 50;
+                const pct2 = total > 0 ? Math.round((v2 / total) * 100) : 50;
+
                 html += `
-                    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6">
-                        <div class="flex justify-between items-center mb-4">
+                    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4">
+                        <div class="flex justify-between items-center">
                             <span class="text-xs uppercase font-bold text-brand-400 bg-brand-500/10 px-3 py-1 rounded-full">${currentTournamentRound} - Duelo #${index + 1}</span>
-                            <span class="text-xs text-slate-400">Total Votos: ${(match.votes1 || 0) + (match.votes2 || 0)}</span>
+                            <span class="text-xs text-slate-400 font-semibold">Votos Válidos Totales: ${total}</span>
                         </div>
-                        <div class="flex items-center justify-between bg-slate-950 p-4 rounded-2xl border border-slate-800">
+                        
+                        <div class="flex items-center justify-between bg-slate-950 p-4 rounded-2xl border border-slate-800 gap-3">
                             <div class="flex items-center space-x-3 w-1/2">
                                 <img src="${prof1 ? prof1.photo : 'https://placehold.co/100'}" class="w-12 h-12 rounded-xl object-cover">
-                                <div class="truncate"><h5 class="text-white font-bold text-sm truncate">${prof1 ? prof1.name : 'TBD'}</h5><p class="text-xs text-brand-400">${match.votes1 || 0} votos</p></div>
+                                <div class="truncate">
+                                    <h5 class="text-white font-bold text-sm truncate">${prof1 ? prof1.name : 'TBD'}</h5>
+                                    <p class="text-xs text-brand-400 font-bold">${v1} votos (${pct1}%)</p>
+                                </div>
                             </div>
                             <span class="text-slate-500 font-black px-2">VS</span>
                             <div class="flex items-center space-x-3 w-1/2 justify-end text-right">
-                                <div class="truncate"><h5 class="text-white font-bold text-sm truncate">${prof2 ? prof2.name : 'TBD'}</h5><p class="text-xs text-brand-400">${match.votes2 || 0} votos</p></div>
+                                <div class="truncate">
+                                    <h5 class="text-white font-bold text-sm truncate">${prof2 ? prof2.name : 'TBD'}</h5>
+                                    <p class="text-xs text-brand-400 font-bold">${v2} votos (${pct2}%)</p>
+                                </div>
                                 <img src="${prof2 ? prof2.photo : 'https://placehold.co/100'}" class="w-12 h-12 rounded-xl object-cover">
+                            </div>
+                        </div>
+
+                        <!-- Barra de Porcentajes Visual -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                                <span class="${v1 >= v2 && total > 0 ? 'text-brand-400' : ''}">${pct1}%</span>
+                                <span class="${v2 > v1 && total > 0 ? 'text-brand-400' : ''}">${pct2}%</span>
+                            </div>
+                            <div class="w-full bg-slate-800 h-3 rounded-full overflow-hidden flex border border-slate-700">
+                                <div class="bg-brand-500 transition-all duration-500" style="width: ${pct1}%"></div>
+                                <div class="bg-blue-600 transition-all duration-500" style="width: ${pct2}%"></div>
                             </div>
                         </div>
                     </div>
@@ -697,23 +744,47 @@
             const tbody = document.getElementById('students-table-body');
             document.getElementById('admin-student-count').innerText = cloudVotes.length;
             if (cloudVotes.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-slate-500">No hay votos registrados todavía en la nube.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-500">No hay votos registrados todavía en la nube.</td></tr>`;
                 return;
             }
             let html = '';
             [...cloudVotes].reverse().forEach(v => {
                 let fechaFormateada = v.date ? new Date(v.date).toLocaleString() : 'N/D';
+                let isInvalid = !v.student || v.student.toLowerCase() === 'anónimo' || v.student.toLowerCase() === 'invitado';
+                
                 html += `
-                    <tr class="hover:bg-slate-800/50 transition-all">
+                    <tr class="hover:bg-slate-800/50 transition-all ${isInvalid ? 'bg-rose-950/20' : ''}">
                         <td class="p-4 text-slate-400 text-xs">${fechaFormateada}</td>
-                        <td class="p-4 font-bold text-white">${v.student}</td>
+                        <td class="p-4 font-bold text-white flex items-center space-x-2">
+                            <span>${v.student}</span>
+                            ${isInvalid ? '<span class="bg-rose-500/20 text-rose-400 text-[10px] px-2 py-0.5 rounded-full border border-rose-500/30">Inválido / Sin nombre</span>' : ''}
+                        </td>
                         <td class="p-4"><span class="bg-brand-500/10 text-brand-400 text-xs px-2.5 py-0.5 rounded-full">${v.round}</span></td>
                         <td class="p-4 text-slate-400 text-xs">${v.matchId || 'N/D'}</td>
                         <td class="p-4 text-brand-400 font-semibold">${v.professor}</td>
+                        <td class="p-4 text-right">
+                            <button onclick="deleteVoteRow(${v.rowIndex})" class="bg-rose-500/10 hover:bg-rose-600 text-rose-400 hover:text-white px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shadow-sm">
+                                <i class="fa-solid fa-trash mr-1"></i> Borrar
+                            </button>
+                        </td>
                     </tr>
                 `;
             });
             tbody.innerHTML = html;
+        }
+
+        function deleteVoteRow(rowIndex) {
+            if (confirm('¿Estás seguro de eliminar este voto de la base de datos?')) {
+                fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: "deleteVote", rowIndex: rowIndex })
+                }).then(() => {
+                    showToast('Voto Eliminado', 'El voto falso o seleccionado ha sido borrado.', 'rose');
+                    setTimeout(() => { fetchDataFromCloud().then(() => renderAll()); }, 1000);
+                }).catch(err => console.error("Error al borrar voto:", err));
+            }
         }
 
         function advanceRound() {
@@ -740,6 +811,34 @@
                 renderAll();
             } else {
                 showToast('¡Torneo Finalizado!', 'Tenemos al ganador absoluto.');
+            }
+        }
+
+        function revertRound() {
+            let currentIndex = ROUNDS_ORDER.indexOf(currentTournamentRound);
+            if (currentIndex > 0) {
+                let prevRoundName = ROUNDS_ORDER[currentIndex - 1];
+                currentTournamentRound = prevRoundName;
+                syncConfigToCloud();
+                showToast('Ronda Retrocedida', `Regresando a la fase de ${prevRoundName}.`, 'rose');
+                setStudentRoundTab(prevRoundName);
+                renderAll();
+            } else {
+                showToast('Límite alcanzado', 'Ya estás en la ronda inicial (Octavos).', 'rose');
+            }
+        }
+
+        function resetTournamentConfirm() {
+            if (confirm('¿ATENCIÓN! ¿Estás completamente seguro de reiniciar el torneo desde cero? Se borrarán todos los votos de Google Sheets y la configuración actual.')) {
+                fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: "resetTournament" })
+                }).then(() => {
+                    showToast('Torneo Reiniciado', 'Todos los datos y votos han sido borrados.', 'rose');
+                    setTimeout(() => { location.reload(); }, 1200);
+                });
             }
         }
 
