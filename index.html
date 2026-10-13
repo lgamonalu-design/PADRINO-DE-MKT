@@ -1,1 +1,957 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Torneo Padrino de Promoción</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Sports/World Cup icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Outfit', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            900: '#14532d',
+                        },
+                        dark: {
+                            800: '#1e293b',
+                            900: '#0f172a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3, h4, .font-display { font-family: 'Outfit', sans-serif; }
+        .tournament-glow {
+            box-shadow: 0 0 25px rgba(34, 197, 94, 0.2);
+        }
+        .match-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .match-card:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-full flex flex-col selection:bg-brand-500 selection:text-white">
 
+    <!-- Navigation Header -->
+    <header class="bg-slate-900/80 backdrop-blur-md border-b border-slate-800 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-brand-600 to-emerald-400 flex items-center justify-center shadow-lg shadow-brand-500/30 text-white text-xl font-black font-display">
+                    <i class="fa-solid fa-trophy"></i>
+                </div>
+                <div>
+                    <span class="text-xs uppercase tracking-wider text-brand-400 font-bold block">Mundial de Profes</span>
+                    <h1 class="text-xl sm:text-2xl font-black font-display text-white tracking-tight">Padrino de Promoción</h1>
+                </div>
+            </div>
+
+            <!-- Role Switcher & User Status -->
+            <div class="flex items-center space-x-3">
+                <div id="student-badge" class="hidden sm:flex items-center space-x-2 bg-slate-800 px-3 py-1.5 rounded-full border border-slate-700 text-sm">
+                    <div class="w-2.5 h-2.5 rounded-full bg-brand-500 animate-pulse"></div>
+                    <span class="text-slate-300">Estudiante: <strong id="current-user-name" class="text-white">Anónimo</strong></span>
+                    <button onclick="openAuthModal()" class="text-xs text-brand-400 hover:underline ml-1 font-semibold">Cambiar</button>
+                </div>
+
+                <div class="flex bg-slate-800 p-1 rounded-xl border border-slate-700">
+                    <button onclick="switchView('student')" id="btn-view-student" class="px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center space-x-2 bg-brand-600 text-white shadow-md">
+                        <i class="fa-solid fa-futbol"></i>
+                        <span class="hidden md:inline">Zona Votación</span>
+                    </button>
+                    <button onclick="switchView('admin')" id="btn-view-admin" class="px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center space-x-2 text-slate-400 hover:text-white">
+                        <i class="fa-solid fa-gear"></i>
+                        <span class="hidden md:inline">Admin</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Student Identity Modal (Required before voting) -->
+    <div id="auth-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-md w-full tournament-glow relative">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-brand-500/10 text-brand-400 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl border border-brand-500/20">
+                    <i class="fa-solid fa-id-card"></i>
+                </div>
+                <h3 class="text-2xl font-black font-display text-white">Identifícate para Votar</h3>
+                <p class="text-slate-400 text-sm mt-1">Introduce tu nombre completo para validar tu voto único por ronda.</p>
+            </div>
+            
+            <form id="auth-form" onsubmit="handleUserLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs uppercase font-bold text-slate-400 mb-1">Nombre y Apellidos</label>
+                    <input type="text" id="input-fullname" required placeholder="Ej. Alejandro Pérez Gómez"
+                        class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 font-medium">
+                </div>
+                <button type="submit" class="w-full bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-brand-600/30 transition-all flex items-center justify-center space-x-2">
+                    <span>¡Entrar al Torneo!</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin Password Modal -->
+    <div id="admin-pin-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-sm w-full relative">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-rose-500/10 text-rose-400 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl border border-rose-500/20">
+                    <i class="fa-solid fa-lock"></i>
+                </div>
+                <h3 class="text-xl font-bold font-display text-white">Acceso Administrador</h3>
+                <p class="text-slate-400 text-xs mt-1">Introduce la clave de acceso (admin123)</p>
+            </div>
+            
+            <form onsubmit="handleAdminLogin(event)" class="space-y-4">
+                <div>
+                    <input type="password" id="admin-password-input" required placeholder="Contraseña..."
+                        class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-center text-white placeholder-slate-500 focus:outline-none focus:border-rose-500 text-lg tracking-widest">
+                </div>
+                <div class="flex space-x-3">
+                    <button type="button" onclick="closeAdminPinModal()" class="w-1/2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold py-3 rounded-xl transition-all">Cancelar</button>
+                    <button type="submit" class="w-1/2 bg-rose-600 hover:bg-rose-500 text-white font-semibold py-3 rounded-xl transition-all shadow-lg shadow-rose-600/30">Acceder</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-24 opacity-0 transition-all duration-300 flex items-center space-x-3 bg-slate-900 border border-slate-700 px-5 py-4 rounded-2xl shadow-2xl">
+        <div id="toast-icon" class="w-8 h-8 rounded-full bg-brand-500/20 text-brand-400 flex items-center justify-center">
+            <i class="fa-solid fa-check"></i>
+        </div>
+        <div>
+            <h4 id="toast-title" class="text-sm font-bold text-white">¡Voto Registrado!</h4>
+            <p id="toast-desc" class="text-xs text-slate-400">Tu voto se ha guardado correctamente.</p>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- ================= STUDENT VIEW ================= -->
+        <div id="view-student" class="space-y-8">
+            
+            <!-- Tournament Banner / Round Status -->
+            <div class="bg-gradient-to-r from-slate-900 via-slate-900 to-slate-800 border border-slate-800 rounded-3xl p-6 sm:p-8 relative overflow-hidden tournament-glow">
+                <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-brand-500/5 rounded-full blur-3xl pointer-events-none"></div>
+                
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+                    <div>
+                        <div class="inline-flex items-center space-x-2 bg-brand-500/10 border border-brand-500/20 px-3 py-1 rounded-full text-brand-400 text-xs font-bold uppercase tracking-wider mb-3">
+                            <i class="fa-solid fa-circle-dot text-[10px] animate-ping"></i>
+                            <span>Fase Activa</span>
+                        </div>
+                        <h2 id="active-round-title" class="text-3xl sm:text-4xl font-black font-display text-white">Octavos de Final</h2>
+                        <p class="text-slate-400 text-sm mt-1 max-w-xl">Vota por tu profesor favorito en cada duelo para clasificarlo a la siguiente ronda del mundial.</p>
+                    </div>
+
+                    <!-- Round Navigation Tabs for Students -->
+                    <div class="flex items-center bg-slate-950/60 p-1.5 rounded-2xl border border-slate-800 overflow-x-auto">
+                        <button onclick="setStudentRoundTab('Octavos')" id="tab-student-Octavos" class="px-4 py-2 rounded-xl text-xs font-bold uppercase transition-all whitespace-nowrap bg-brand-600 text-white">Octavos</button>
+                        <button onclick="setStudentRoundTab('Cuartos')" id="tab-student-Cuartos" class="px-4 py-2 rounded-xl text-xs font-bold uppercase transition-all whitespace-nowrap text-slate-400 hover:text-white">Cuartos</button>
+                        <button onclick="setStudentRoundTab('Semifinal')" id="tab-student-Semifinal" class="px-4 py-2 rounded-xl text-xs font-bold uppercase transition-all whitespace-nowrap text-slate-400 hover:text-white">Semifinales</button>
+                        <button onclick="setStudentRoundTab('Final')" id="tab-student-Final" class="px-4 py-2 rounded-xl text-xs font-bold uppercase transition-all whitespace-nowrap text-slate-400 hover:text-white">Gran Final</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Matches Bracket Display Area -->
+            <div class="space-y-6">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xl font-bold font-display text-white flex items-center space-x-2">
+                        <i class="fa-solid fa-fire text-amber-500"></i>
+                        <span id="bracket-section-label">Enfrentamientos de Octavos de Final</span>
+                    </h3>
+                    <span id="matches-count-badge" class="text-xs bg-slate-800 text-slate-300 px-3 py-1 rounded-full border border-slate-700">0 duelos activos</span>
+                </div>
+
+                <!-- Grid of Matchups -->
+                <div id="student-matches-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Dynamic Match Cards rendered via JS -->
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ================= ADMIN VIEW ================= -->
+        <div id="view-admin" class="space-y-8 hidden">
+            
+            <!-- Admin Header Banner -->
+            <div class="bg-gradient-to-r from-rose-950/30 via-slate-900 to-slate-900 border border-rose-900/40 rounded-3xl p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div>
+                    <div class="inline-flex items-center space-x-2 bg-rose-500/10 border border-rose-500/20 px-3 py-1 rounded-full text-rose-400 text-xs font-bold uppercase tracking-wider mb-3">
+                        <i class="fa-solid fa-shield-halved"></i>
+                        <span>Panel de Control (Administrador)</span>
+                    </div>
+                    <h2 class="text-3xl font-black font-display text-white">Gestión del Torneo</h2>
+                    <p class="text-slate-400 text-sm mt-1">Gestiona profesores, controla rondas, avanza ganadores y supervisa la participación.</p>
+                </div>
+
+                <div class="flex items-center space-x-3">
+                    <button onclick="openAddProfessorModal()" class="bg-brand-600 hover:bg-brand-500 text-white px-5 py-3 rounded-xl font-bold text-sm shadow-lg shadow-brand-600/30 transition-all flex items-center space-x-2">
+                        <i class="fa-solid fa-user-plus"></i>
+                        <span>Añadir Profesor</span>
+                    </button>
+                    <button onclick="advanceRound()" class="bg-amber-600 hover:bg-amber-500 text-white px-5 py-3 rounded-xl font-bold text-sm shadow-lg shadow-amber-600/30 transition-all flex items-center space-x-2">
+                        <i class="fa-solid fa-forward-step"></i>
+                        <span>Avanzar Ronda</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Admin Tabs Navigation -->
+            <div class="flex border-b border-slate-800 space-x-6">
+                <button onclick="setAdminTab('matches')" id="tab-admin-matches" class="pb-3 text-sm font-bold border-b-2 border-brand-500 text-brand-400 transition-all flex items-center space-x-2">
+                    <i class="fa-solid fa-sitemap"></i>
+                    <span>Control de Enfrentamientos y Votos</span>
+                </button>
+                <button onclick="setAdminTab('professors')" id="tab-admin-professors" class="pb-3 text-sm font-bold border-b-2 border-transparent text-slate-400 hover:text-white transition-all flex items-center space-x-2">
+                    <i class="fa-solid fa-chalkboard-user"></i>
+                    <span>Listado de Profesores</span>
+                </button>
+                <button onclick="setAdminTab('students')" id="tab-admin-students" class="pb-3 text-sm font-bold border-b-2 border-transparent text-slate-400 hover:text-white transition-all flex items-center space-x-2">
+                    <i class="fa-solid fa-users"></i>
+                    <span>Estudiantes Participantes (<span id="admin-student-count">0</span>)</span>
+                </button>
+            </div>
+
+            <!-- Tab Content 1: Matches Control -->
+            <div id="admin-tab-matches" class="space-y-6">
+                <div class="flex items-center justify-between bg-slate-900 border border-slate-800 p-4 rounded-2xl">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-xl bg-brand-500/10 text-brand-400 flex items-center justify-center font-bold">
+                            <i class="fa-solid fa-flag-checkered"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-white font-bold">Ronda Actual en Curso: <span id="admin-current-round-label" class="text-brand-400">Octavos de Final</span></h4>
+                            <p class="text-xs text-slate-400">Al cerrar la ronda actual, los candidatos con más votos avanzarán automáticamente.</p>
+                        </div>
+                    </div>
+                    <button onclick="advanceRound()" class="bg-brand-600 hover:bg-brand-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-md">
+                        Cerrar Ronda y Avanzar
+                    </button>
+                </div>
+
+                <div id="admin-matches-list" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Rendered by JS -->
+                </div>
+            </div>
+
+            <!-- Tab Content 2: Professors Management -->
+            <div id="admin-tab-professors" class="space-y-6 hidden">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="admin-professors-grid">
+                    <!-- Rendered by JS -->
+                </div>
+            </div>
+
+            <!-- Tab Content 3: Student Participants Log -->
+            <div id="admin-tab-students" class="space-y-6 hidden">
+                <div class="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-xl">
+                    <div class="p-6 border-b border-slate-800 flex justify-between items-center">
+                        <h4 class="font-bold text-white font-display">Registro de Estudiantes que han Votado</h4>
+                        <button onclick="exportStudentData()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl font-semibold transition-all">
+                            <i class="fa-solid fa-download mr-1.5"></i> Exportar Lista
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-950/50 text-slate-400 text-xs uppercase tracking-wider border-b border-slate-800">
+                                    <th class="p-4 font-semibold">Nombre y Apellidos</th>
+                                    <th class="p-4 font-semibold">Rondas Votadas</th>
+                                    <th class="p-4 font-semibold">Última Actividad</th>
+                                </tr>
+                            </thead>
+                            <tbody id="students-table-body" class="divide-y divide-slate-800 text-sm">
+                                <!-- Rendered by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Add / Edit Professor Modal -->
+    <div id="prof-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-md w-full relative">
+            <div class="flex justify-between items-center mb-6">
+                <h3 id="prof-modal-title" class="text-xl font-bold font-display text-white">Añadir Nuevo Profesor</h3>
+                <button onclick="closeProfModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            
+            <form id="prof-form" onsubmit="handleProfFormSubmit(event)" class="space-y-4">
+                <input type="hidden" id="prof-id">
+                <div>
+                    <label class="block text-xs uppercase font-bold text-slate-400 mb-1">Nombre Completo del Profesor</label>
+                    <input type="text" id="prof-name" required placeholder="Ej. Dr. Roberto Gómez"
+                        class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 font-medium">
+                </div>
+                <div>
+                    <label class="block text-xs uppercase font-bold text-slate-400 mb-1">Materia / Departamento</label>
+                    <input type="text" id="prof-subject" required placeholder="Ej. Matemáticas Avanzadas"
+                        class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 font-medium">
+                </div>
+                <div>
+                    <label class="block text-xs uppercase font-bold text-slate-400 mb-1">URL de Foto / Avatar</label>
+                    <input type="url" id="prof-photo" placeholder="https://images.unsplash.com/..."
+                        class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 font-medium text-xs">
+                    <p class="text-[11px] text-slate-500 mt-1">Si se deja en blanco se generará un avatar predeterminado.</p>
+                </div>
+                <div class="flex space-x-3 pt-2">
+                    <button type="button" onclick="closeProfModal()" class="w-1/2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold py-3 rounded-xl transition-all">Cancelar</button>
+                    <button type="submit" class="w-1/2 bg-brand-600 hover:bg-brand-500 text-white font-semibold py-3 rounded-xl transition-all shadow-lg shadow-brand-600/30">Guardar Profesor</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // Application State & Initial Mock Data
+        let currentUser = localStorage.getItem('tournament_user') || null;
+        let currentView = 'student';
+        let studentRoundTab = 'Octavos';
+        let adminTab = 'matches';
+        let currentTournamentRound = 'Octavos'; // 'Octavos', 'Cuartos', 'Semifinal', 'Final'
+
+        const ROUNDS_ORDER = ['Octavos', 'Cuartos', 'Semifinal', 'Final'];
+
+        // Initial 16 professors for Octavos (World Cup standard 16 bracket spots)
+        let professors = [
+            { id: 1, name: 'Dr. Roberto Gómez', subject: 'Cálculo I', photo: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300' },
+            { id: 2, name: 'Dra. Elena Martínez', subject: 'Física Cuántica', photo: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=300' },
+            { id: 3, name: 'Prof. Carlos Ruiz', subject: 'Programación Web', photo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300' },
+            { id: 4, name: 'Dra. Sofía Benítez', subject: 'Estructuras de Datos', photo: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=300' },
+            { id: 5, name: 'Prof. Javier Morales', subject: 'Redes y Seguridad', photo: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=300' },
+            { id: 6, name: 'Dra. Carmen Navarro', subject: 'Bases de Datos', photo: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=300' },
+            { id: 7, name: 'Prof. Alejandro Vega', subject: 'Inteligencia Artificial', photo: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=300' },
+            { id: 8, name: 'Dra. Lucía Fernández', subject: 'Arquitectura de Computadores', photo: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&q=80&w=300' },
+            { id: 9, name: 'Prof. Miguel Ángel Torres', subject: 'Ingeniería de Software', photo: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=300' },
+            { id: 10, name: 'Dra. Beatriz Gil', subject: 'Sistemas Operativos', photo: 'https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?auto=format&fit=crop&q=80&w=300' },
+            { id: 11, name: 'Prof. David Santos', subject: 'Matemáticas Discretas', photo: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=300' },
+            { id: 12, name: 'Dra. Patricia León', subject: 'Ética Profesional', photo: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&q=80&w=300' },
+            { id: 13, name: 'Prof. Fernando Alonso', subject: 'Física General', photo: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&q=80&w=300' },
+            { id: 14, name: 'Dra. Teresa Montero', subject: 'Estadística', photo: 'https://images.unsplash.com/photo-1534751516642-a1af1ed26a56?auto=format&fit=crop&q=80&w=300' },
+            { id: 15, name: 'Prof. Ignacio Ramos', subject: 'Gestión de Proyectos', photo: 'https://images.unsplash.com/photo-1501196354995-cbb51c65aaea?auto=format&fit=crop&q=80&w=300' },
+            { id: 16, name: 'Dra. Claudia Domínguez', subject: 'Innovación Tecnológica', photo: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&q=80&w=300' }
+        ];
+
+        // Structure of matchups per round: { roundName: [ { id: 1, prof1Id: 1, prof2Id: 2, votes1: 12, votes2: 8, winnerId: null }, ... ] }
+        let tournamentBrackets = {
+            'Octavos': [],
+            'Cuartos': [],
+            'Semifinal': [],
+            'Final': []
+        };
+
+        // Student votes tracking: Array of objects { studentName: '...', round: '...', matchId: 1, profId: 1 }
+        let studentVotes = JSON.parse(localStorage.getItem('tournament_votes')) || [];
+        // Registered students list: Array of objects { name: '...', roundsVoted: [...], lastActivity: '...' }
+        let registeredStudents = JSON.parse(localStorage.getItem('tournament_students')) || [];
+
+        // Initialize bracket matchups on load
+        function initTournamentBrackets() {
+            // Generate Octavos (8 matches from 16 professors)
+            if (tournamentBrackets['Octavos'].length === 0) {
+                let octavosMatches = [];
+                for (let i = 0; i < professors.length; i += 2) {
+                    octavosMatches.push({
+                        id: `octavos_${i/2 + 1}`,
+                        prof1Id: professors[i].id,
+                        prof2Id: professors[i+1] ? professors[i+1].id : null,
+                        votes1: 0,
+                        votes2: 0,
+                        winnerId: null
+                    });
+                }
+                tournamentBrackets['Octavos'] = octavosMatches;
+            }
+
+            // Generate Cuartos (4 matches)
+            if (tournamentBrackets['Cuartos'].length === 0) {
+                let cuartosMatches = [];
+                for (let i = 0; i < 4; i++) {
+                    cuartosMatches.push({
+                        id: `cuartos_${i + 1}`,
+                        prof1Id: null,
+                        prof2Id: null,
+                        votes1: 0,
+                        votes2: 0,
+                        winnerId: null
+                    });
+                }
+                tournamentBrackets['Cuartos'] = cuartosMatches;
+            }
+
+            // Generate Semifinal (2 matches)
+            if (tournamentBrackets['Semifinal'].length === 0) {
+                let semiMatches = [];
+                for (let i = 0; i < 2; i++) {
+                    semiMatches.push({
+                        id: `semi_${i + 1}`,
+                        prof1Id: null,
+                        prof2Id: null,
+                        votes1: 0,
+                        votes2: 0,
+                        winnerId: null
+                    });
+                }
+                tournamentBrackets['Semifinal'] = semiMatches;
+            }
+
+            // Generate Final (1 match)
+            if (tournamentBrackets['Final'].length === 0) {
+                tournamentBrackets['Final'] = [{
+                    id: 'final_1',
+                    prof1Id: null,
+                    prof2Id: null,
+                    votes1: 0,
+                    votes2: 0,
+                    winnerId: null
+                }];
+            }
+        }
+
+        // On window load
+        window.onload = function() {
+            initTournamentBrackets();
+            checkUserAuth();
+            renderAll();
+        };
+
+        // Authentication Management
+        function checkUserAuth() {
+            const badge = document.getElementById('current-user-name');
+            if (currentUser) {
+                badge.innerText = currentUser;
+                document.getElementById('auth-modal').classList.add('hidden');
+            } else {
+                badge.innerText = 'Invitado';
+                document.getElementById('auth-modal').classList.remove('hidden');
+            }
+        }
+
+        function openAuthModal() {
+            document.getElementById('auth-modal').classList.remove('hidden');
+        }
+
+        function handleUserLogin(event) {
+            event.preventDefault();
+            const nameInput = document.getElementById('input-fullname').value.trim();
+            if (!nameInput) return;
+
+            currentUser = nameInput;
+            localStorage.setItem('tournament_user', currentUser);
+            
+            // Register student if not exists
+            let existing = registeredStudents.find(s => s.name.toLowerCase() === currentUser.toLowerCase());
+            if (!existing) {
+                registeredStudents.push({
+                    name: currentUser,
+                    roundsVoted: [],
+                    lastActivity: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                });
+            }
+            saveData();
+            checkUserAuth();
+            document.getElementById('auth-modal').classList.add('hidden');
+            showToast('¡Bienvenido, ' + currentUser + '!', 'Ya puedes registrar tus votos en el torneo.');
+            renderAll();
+        }
+
+        // View Switcher
+        function switchView(view) {
+            currentView = view;
+            const btnStudent = document.getElementById('btn-view-student');
+            const btnAdmin = document.getElementById('btn-view-admin');
+            const viewStudentEl = document.getElementById('view-student');
+            const viewAdminEl = document.getElementById('view-admin');
+
+            if (view === 'student') {
+                btnStudent.className = "px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center space-x-2 bg-brand-600 text-white shadow-md";
+                btnAdmin.className = "px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center space-x-2 text-slate-400 hover:text-white";
+                viewStudentEl.classList.remove('hidden');
+                viewAdminEl.classList.add('hidden');
+            } else if (view === 'admin') {
+                // Prompt PIN
+                openAdminPinModal();
+            }
+        }
+
+        function openAdminPinModal() {
+            document.getElementById('admin-pin-modal').classList.remove('hidden');
+        }
+
+        function closeAdminPinModal() {
+            document.getElementById('admin-pin-modal').classList.add('hidden');
+        }
+
+        function handleAdminLogin(event) {
+            event.preventDefault();
+            const pass = document.getElementById('admin-password-input').value;
+            if (pass === 'admin123') {
+                closeAdminPinModal();
+                currentView = 'admin';
+                const btnStudent = document.getElementById('btn-view-student');
+                const btnAdmin = document.getElementById('btn-view-admin');
+                const viewStudentEl = document.getElementById('view-student');
+                const viewAdminEl = document.getElementById('view-admin');
+
+                btnAdmin.className = "px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center space-x-2 bg-rose-600 text-white shadow-md";
+                btnStudent.className = "px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center space-x-2 text-slate-400 hover:text-white";
+                viewStudentEl.classList.add('hidden');
+                viewAdminEl.classList.remove('hidden');
+                document.getElementById('admin-password-input').value = '';
+                renderAll();
+                showToast('Acceso Concedido', 'Panel de administración activado correctamente.', 'rose');
+            } else {
+                showToast('Contraseña Incorrecta', 'Usa "admin123" para acceder.', 'rose');
+            }
+        }
+
+        // Student Round Tabs
+        function setStudentRoundTab(round) {
+            studentRoundTab = round;
+            ['Octavos', 'Cuartos', 'Semifinal', 'Final'].forEach(r => {
+                const btn = document.getElementById(`tab-student-${r}`);
+                if (r === round) {
+                    btn.className = "px-4 py-2 rounded-xl text-xs font-bold uppercase transition-all whitespace-nowrap bg-brand-600 text-white shadow-md";
+                } else {
+                    btn.className = "px-4 py-2 rounded-xl text-xs font-bold uppercase transition-all whitespace-nowrap text-slate-400 hover:text-white";
+                }
+            });
+            document.getElementById('bracket-section-label').innerText = `Enfrentamientos de ${round}`;
+            renderStudentMatches();
+        }
+
+        // Render Student Matches for Active Round
+        function renderStudentMatches() {
+            const container = document.getElementById('student-matches-grid');
+            const matches = tournamentBrackets[studentRoundTab] || [];
+            document.getElementById('matches-count-badge').innerText = `${matches.length} duelos activos`;
+
+            if (matches.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-2 text-center py-16 bg-slate-900 border border-slate-800 rounded-3xl">
+                        <i class="fa-solid fa-hourglass-half text-4xl text-slate-600 mb-3"></i>
+                        <h4 class="text-lg font-bold text-slate-300">Ronda no disponible aún</h4>
+                        <p class="text-slate-500 text-sm mt-1">Los enfrentamientos de ${studentRoundTab} se generarán cuando el administrador avance la ronda anterior.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            matches.forEach((match, index) => {
+                const prof1 = professors.find(p => p.id === match.prof1Id);
+                const prof2 = professors.find(p => p.id === match.prof2Id);
+
+                // Check if current user has voted in this match
+                const userVote = studentVotes.find(v => v.studentName.toLowerCase() === (currentUser || '').toLowerCase() && v.round === studentRoundTab && v.matchId === match.id);
+                const votedProfId = userVote ? userVote.profId : null;
+
+                const totalVotes = (match.votes1 || 0) + (match.votes2 || 0);
+                const p1Percent = totalVotes > 0 ? Math.round((match.votes1 / totalVotes) * 100) : 50;
+                const p2Percent = totalVotes > 0 ? Math.round((match.votes2 / totalVotes) * 100) : 50;
+
+                const isP1Winning = match.votes1 > match.votes2;
+                const isP2Winning = match.votes2 > match.votes1;
+
+                html += `
+                    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 match-card relative overflow-hidden flex flex-col justify-between">
+                        <div class="absolute top-4 right-4 bg-slate-800 px-3 py-1 rounded-full text-xs font-bold text-slate-400 border border-slate-700">
+                            Duelo #${index + 1}
+                        </div>
+
+                        <!-- Matchup Contestants Grid -->
+                        <div class="grid grid-cols-2 gap-4 items-center my-4">
+                            <!-- Professor 1 -->
+                            <div class="text-center group">
+                                <div class="relative w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-3 rounded-2xl overflow-hidden border-2 ${votedProfId === match.prof1Id ? 'border-brand-500 ring-4 ring-brand-500/20' : isP1Winning ? 'border-amber-500' : 'border-slate-700'} transition-all shadow-lg">
+                                    <img src="${prof1 ? prof1.photo : 'https://placehold.co/300x300/1e293b/ffffff?text=Prof'}" alt="${prof1 ? prof1.name : 'TBD'}" class="w-full h-full object-cover">
+                                    ${isP1Winning && totalVotes > 0 ? '<div class="absolute top-1 left-1 bg-amber-500 text-slate-950 px-1.5 py-0.5 rounded text-[10px] font-black"><i class="fa-solid fa-crown"></i></div>' : ''}
+                                </div>
+                                <h4 class="font-bold text-white text-sm sm:text-base truncate">${prof1 ? prof1.name : 'Por definir'}</h4>
+                                <p class="text-xs text-slate-400 truncate">${prof1 ? prof1.subject : 'Clasificando...'}</p>
+                                
+                                <button onclick="castVote('${studentRoundTab}', '${match.id}', ${prof1 ? prof1.id : 'null'})" 
+                                    ${!prof1 || !currentUser ? 'disabled' : ''}
+                                    class="mt-4 w-full py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center space-x-1.5 ${votedProfId === match.prof1Id ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/30 ring-2 ring-brand-400' : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'}">
+                                    <i class="fa-solid ${votedProfId === match.prof1Id ? 'fa-check-to-slot' : 'fa-hand-point-up'}"></i>
+                                    <span>${votedProfId === match.prof1Id ? 'Tu Voto' : 'Votar'}</span>
+                                </button>
+                            </div>
+
+                            <!-- Professor 2 -->
+                            <div class="text-center group">
+                                <div class="relative w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-3 rounded-2xl overflow-hidden border-2 ${votedProfId === match.prof2Id ? 'border-brand-500 ring-4 ring-brand-500/20' : isP2Winning ? 'border-amber-500' : 'border-slate-700'} transition-all shadow-lg">
+                                    <img src="${prof2 ? prof2.photo : 'https://placehold.co/300x300/1e293b/ffffff?text=Prof'}" alt="${prof2 ? prof2.name : 'TBD'}" class="w-full h-full object-cover">
+                                    ${isP2Winning && totalVotes > 0 ? '<div class="absolute top-1 left-1 bg-amber-500 text-slate-950 px-1.5 py-0.5 rounded text-[10px] font-black"><i class="fa-solid fa-crown"></i></div>' : ''}
+                                </div>
+                                <h4 class="font-bold text-white text-sm sm:text-base truncate">${prof2 ? prof2.name : 'Por definir'}</h4>
+                                <p class="text-xs text-slate-400 truncate">${prof2 ? prof2.subject : 'Clasificando...'}</p>
+                                
+                                <button onclick="castVote('${studentRoundTab}', '${match.id}', ${prof2 ? prof2.id : 'null'})" 
+                                    ${!prof2 || !currentUser ? 'disabled' : ''}
+                                    class="mt-4 w-full py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center space-x-1.5 ${votedProfId === match.prof2Id ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/30 ring-2 ring-brand-400' : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'}">
+                                    <i class="fa-solid ${votedProfId === match.prof2Id ? 'fa-check-to-slot' : 'fa-hand-point-up'}"></i>
+                                    <span>${votedProfId === match.prof2Id ? 'Tu Voto' : 'Votar'}</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Live Percentage Progress Bar -->
+                        <div class="mt-4 pt-4 border-t border-slate-800">
+                            <div class="flex justify-between text-xs text-slate-400 mb-1.5 font-medium">
+                                <span>${match.votes1 || 0} votos (${p1Percent}%)</span>
+                                <span class="text-slate-500 uppercase tracking-widest text-[10px]">En vivo</span>
+                                <span>${match.votes2 || 0} votos (${p2Percent}%)</span>
+                            </div>
+                            <div class="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden flex">
+                                <div class="bg-brand-500 transition-all duration-500" style="width: ${p1Percent}%"></div>
+                                <div class="bg-indigo-500 transition-all duration-500" style="width: ${p2Percent}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // Cast Vote Functionality
+        function castVote(round, matchId, profId) {
+            if (!currentUser) {
+                openAuthModal();
+                return;
+            }
+            if (!profId || profId === 'null') {
+                showToast('Aviso', 'Este contrincante aún no está definido.', 'rose');
+                return;
+            }
+
+            const matches = tournamentBrackets[round];
+            const match = matches.find(m => m.id === matchId);
+            if (!match) return;
+
+            // Check if user already voted in this match
+            let existingVoteIndex = studentVotes.findIndex(v => v.studentName.toLowerCase() === currentUser.toLowerCase() && v.round === round && v.matchId === matchId);
+
+            if (existingVoteIndex !== -1) {
+                // Change vote
+                const oldProfId = studentVotes[existingVoteIndex].profId;
+                if (oldProfId === match.prof1Id) match.votes1 = Math.max(0, match.votes1 - 1);
+                if (oldProfId === match.prof2Id) match.votes2 = Math.max(0, match.votes2 - 1);
+
+                studentVotes[existingVoteIndex].profId = profId;
+            } else {
+                // New vote
+                studentVotes.push({
+                    studentName: currentUser,
+                    round: round,
+                    matchId: matchId,
+                    profId: profId
+                });
+
+                // Update student record
+                let studentRec = registeredStudents.find(s => s.name.toLowerCase() === currentUser.toLowerCase());
+                if (studentRec) {
+                    if (!studentRec.roundsVoted.includes(round)) studentRec.roundsVoted.push(round);
+                    studentRec.lastActivity = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                }
+            }
+
+            // Add vote count
+            if (profId === match.prof1Id) match.votes1++;
+            if (profId === match.prof2Id) match.votes2++;
+
+            saveData();
+            renderAll();
+            showToast('¡Voto registrado con éxito!', 'Tu voz ha quedado guardada en el torneo.');
+        }
+
+        // Admin Tabs
+        function setAdminTab(tab) {
+            adminTab = tab;
+            ['matches', 'professors', 'students'].forEach(t => {
+                const btn = document.getElementById(`tab-admin-${t}`);
+                const section = document.getElementById(`admin-tab-${t}`);
+                if (t === tab) {
+                    btn.className = "pb-3 text-sm font-bold border-b-2 border-brand-500 text-brand-400 transition-all flex items-center space-x-2";
+                    section.classList.remove('hidden');
+                } else {
+                    btn.className = "pb-3 text-sm font-bold border-b-2 border-transparent text-slate-400 hover:text-white transition-all flex items-center space-x-2";
+                    section.classList.add('hidden');
+                }
+            });
+        }
+
+        // Render Admin Matches Control
+        function renderAdminMatches() {
+            const container = document.getElementById('admin-matches-list');
+            const matches = tournamentBrackets[currentTournamentRound] || [];
+            document.getElementById('admin-current-round-label').innerText = currentTournamentRound;
+
+            let html = '';
+            matches.forEach((match, index) => {
+                const prof1 = professors.find(p => p.id === match.prof1Id);
+                const prof2 = professors.find(p => p.id === match.prof2Id);
+
+                html += `
+                    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="text-xs uppercase font-bold text-brand-400 bg-brand-500/10 px-3 py-1 rounded-full border border-brand-500/20">${currentTournamentRound} - Duelo #${index + 1}</span>
+                            <span class="text-xs text-slate-400">Total Votos: ${(match.votes1 || 0) + (match.votes2 || 0)}</span>
+                        </div>
+                        <div class="flex items-center justify-between bg-slate-950 p-4 rounded-2xl border border-slate-800">
+                            <div class="flex items-center space-x-3 w-1/2">
+                                <img src="${prof1 ? prof1.photo : 'https://placehold.co/100'}" class="w-12 h-12 rounded-xl object-cover">
+                                <div class="truncate">
+                                    <h5 class="text-white font-bold text-sm truncate">${prof1 ? prof1.name : 'TBD'}</h5>
+                                    <p class="text-xs text-brand-400 font-semibold">${match.votes1 || 0} votos</p>
+                                </div>
+                            </div>
+                            <span class="text-slate-500 font-black px-2">VS</span>
+                            <div class="flex items-center space-x-3 w-1/2 justify-end text-right">
+                                <div class="truncate">
+                                    <h5 class="text-white font-bold text-sm truncate">${prof2 ? prof2.name : 'TBD'}</h5>
+                                    <p class="text-xs text-brand-400 font-semibold">${match.votes2 || 0} votos</p>
+                                </div>
+                                <img src="${prof2 ? prof2.photo : 'https://placehold.co/100'}" class="w-12 h-12 rounded-xl object-cover">
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        // Render Admin Professors Grid
+        function renderAdminProfessors() {
+            const container = document.getElementById('admin-professors-grid');
+            let html = '';
+            professors.forEach(prof => {
+                html += `
+                    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-5 flex flex-col justify-between">
+                        <div class="flex items-center space-x-4 mb-4">
+                            <img src="${prof.photo}" class="w-16 h-16 rounded-2xl object-cover border border-slate-700">
+                            <div class="overflow-hidden">
+                                <h4 class="font-bold text-white text-base truncate">${prof.name}</h4>
+                                <p class="text-xs text-slate-400 truncate">${prof.subject}</p>
+                            </div>
+                        </div>
+                        <div class="flex space-x-2 pt-3 border-t border-slate-800">
+                            <button onclick="openEditProfessorModal(${prof.id})" class="w-1/2 bg-slate-800 hover:bg-slate-700 text-slate-300 py-2 rounded-xl text-xs font-semibold transition-all">Editar</button>
+                            <button onclick="deleteProfessor(${prof.id})" class="w-1/2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 py-2 rounded-xl text-xs font-semibold transition-all">Eliminar</button>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        // Render Admin Students Table
+        function renderAdminStudents() {
+            const tbody = document.getElementById('students-table-body');
+            document.getElementById('admin-student-count').innerText = registeredStudents.length;
+
+            if (registeredStudents.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" class="p-6 text-center text-slate-500">No hay estudiantes registrados todavía.</td></tr>`;
+                return;
+            }
+
+            let html = '';
+            registeredStudents.forEach(stu => {
+                html += `
+                    <tr class="hover:bg-slate-800/50 transition-all">
+                        <td class="p-4 font-bold text-white">${stu.name}</td>
+                        <td class="p-4">
+                            <div class="flex flex-wrap gap-1.5">
+                                ${stu.roundsVoted.length > 0 ? stu.roundsVoted.map(r => `<span class="bg-brand-500/10 text-brand-400 text-xs px-2.5 py-0.5 rounded-full border border-brand-500/20 font-semibold">${r}</span>`).join('') : '<span class="text-slate-500 text-xs">Ninguna</span>'}
+                            </div>
+                        </td>
+                        <td class="p-4 text-slate-400 text-xs">${stu.lastActivity}</td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+
+        // Advance Round Logic (World Cup style advancement)
+        function advanceRound() {
+            const currentMatches = tournamentBrackets[currentTournamentRound];
+            let allHaveVotes = currentMatches.every(m => (m.votes1 || 0) + (m.votes2 || 0) >= 0);
+
+            if (!allHaveVotes) {
+                showToast('Aviso', 'Aún hay enfrentamientos pendientes.', 'rose');
+                return;
+            }
+
+            // Determine winners of current round
+            let winners = [];
+            currentMatches.forEach(m => {
+                if (m.votes1 >= m.votes2) {
+                    winners.push(m.prof1Id);
+                } else {
+                    winners.push(m.prof2Id);
+                }
+            });
+
+            // Find next round
+            let currentIndex = ROUNDS_ORDER.indexOf(currentTournamentRound);
+            if (currentIndex < ROUNDS_ORDER.length - 1) {
+                let nextRoundName = ROUNDS_ORDER[currentIndex + 1];
+                currentTournamentRound = nextRoundName;
+
+                // Populate next round bracket
+                let nextMatches = tournamentBrackets[nextRoundName];
+                for (let i = 0; i < winners.length; i += 2) {
+                    let matchIndex = Math.floor(i / 2);
+                    if (nextMatches[matchIndex]) {
+                        nextMatches[matchIndex].prof1Id = winners[i];
+                        nextMatches[matchIndex].prof2Id = winners[i+1] !== undefined ? winners[i+1] : null;
+                        nextMatches[matchIndex].votes1 = 0;
+                        nextMatches[matchIndex].votes2 = 0;
+                    }
+                }
+
+                showToast('¡Ronda Avanzada!', `Se ha iniciado oficialmente la fase de ${nextRoundName}.`);
+                setStudentRoundTab(nextRoundName);
+                renderAll();
+            } else {
+                showToast('¡Torneo Finalizado!', 'Ya tenemos al ganador absoluto del Padrino de Promoción.', 'brand');
+            }
+        }
+
+        // Professor CRUD Modals
+        function openAddProfessorModal() {
+            document.getElementById('prof-id').value = '';
+            document.getElementById('prof-name').value = '';
+            document.getElementById('prof-subject').value = '';
+            document.getElementById('prof-photo').value = '';
+            document.getElementById('prof-modal-title').innerText = 'Añadir Nuevo Profesor';
+            document.getElementById('prof-modal').classList.remove('hidden');
+        }
+
+        function openEditProfessorModal(id) {
+            const prof = professors.find(p => p.id === id);
+            if (!prof) return;
+            document.getElementById('prof-id').value = prof.id;
+            document.getElementById('prof-name').value = prof.name;
+            document.getElementById('prof-subject').value = prof.subject;
+            document.getElementById('prof-photo').value = prof.photo;
+            document.getElementById('prof-modal-title').innerText = 'Editar Profesor';
+            document.getElementById('prof-modal').classList.remove('hidden');
+        }
+
+        function closeProfModal() {
+            document.getElementById('prof-modal').classList.add('hidden');
+        }
+
+        function handleProfFormSubmit(event) {
+            event.preventDefault();
+            const id = document.getElementById('prof-id').value;
+            const name = document.getElementById('prof-name').value;
+            const subject = document.getElementById('prof-subject').value;
+            const photoInput = document.getElementById('prof-photo').value.trim();
+            const photo = photoInput || `https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300`;
+
+            if (id) {
+                // Edit
+                let prof = professors.find(p => p.id == id);
+                if (prof) {
+                    prof.name = name;
+                    prof.subject = subject;
+                    prof.photo = photo;
+                }
+                showToast('Profesor Actualizado', 'Los cambios se han guardado correctamente.');
+            } else {
+                // Add new
+                const newId = professors.length > 0 ? Math.max(...professors.map(p => p.id)) + 1 : 1;
+                professors.push({ id: newId, name, subject, photo });
+                showToast('Profesor Añadido', 'El candidato se ha incorporado al torneo.');
+            }
+
+            closeProfModal();
+            initTournamentBrackets();
+            renderAll();
+        }
+
+        function deleteProfessor(id) {
+            if (confirm('¿Estás seguro de eliminar a este profesor del torneo?')) {
+                professors = professors.filter(p => p.id !== id);
+                initTournamentBrackets();
+                renderAll();
+                showToast('Profesor Eliminado', 'Se ha retirado al candidato.', 'rose');
+            }
+        }
+
+        // Toast Notification Helper
+        function showToast(title, desc, type = 'brand') {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-title').innerText = title;
+            document.getElementById('toast-desc').innerText = desc;
+            
+            toast.classList.remove('translate-y-24', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-24', 'opacity-0');
+            }, 3500);
+        }
+
+        // Save State to LocalStorage
+        function saveData() {
+            localStorage.setItem('tournament_votes', JSON.stringify(studentVotes));
+            localStorage.setItem('tournament_students', JSON.stringify(registeredStudents));
+        }
+
+        // Render All UI Elements
+        function renderAll() {
+            renderStudentMatches();
+            renderAdminMatches();
+            renderAdminProfessors();
+            renderAdminStudents();
+        }
+
+        // Export Student Data
+        function exportStudentData() {
+            let csvContent = "data:text/csv;charset=utf-8,Estudiante,Rondas Votadas,Ultima Actividad\n";
+            registeredStudents.forEach(s => {
+                csvContent += `"${s.name}","${s.roundsVoted.join(' - ')}","${s.lastActivity}"\n`;
+            });
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "estudiantes_participantes_torneo.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast('Datos Exportados', 'Se ha descargado el archivo CSV con la lista de participantes.');
+        }
+    </script>
+</body>
+</html>
